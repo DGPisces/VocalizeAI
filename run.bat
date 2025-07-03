@@ -20,7 +20,7 @@ echo OPENAI_BASE_URL: %OPENAI_BASE_URL%
 echo OPENAI_MODEL: %OPENAI_MODEL%
 
 echo Running Vocalize AI Chatbot...
-python -m src.chatbot
+python3 -m src.chatbot
 
 echo Script finished.
 pause 

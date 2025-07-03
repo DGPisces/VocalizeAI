@@ -60,7 +60,7 @@
 
    **对于 Windows 用户**：
    ```cmd
-   python -m src.chatbot
+   python3 -m src.chatbot
    ```
    或者，您可以使用我们提供的 `run.bat` 脚本，它会自动设置环境变量并运行程序：
    ```cmd
@@ -148,7 +148,7 @@ This is an AI-powered restaurant reservation chatbot project, aiming to simplify
 
     **For Windows Users**:
     ```cmd
-    python -m src.chatbot
+    python3 -m src.chatbot
     ```
     or, you can use our provided `run.bat` script, which will automatically set environment variables and run the program:
     ```cmd
