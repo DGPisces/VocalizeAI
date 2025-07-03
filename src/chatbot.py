@@ -9,12 +9,12 @@ sensenova.secret_access_key = api.SENSENOVA_SECRET_ACCESS_KEY
 
 # 设置你的OpenAI API Key
 client = OpenAI(api_key=api.OPENAI_API_KEY,
-                base_url = "https://api.sensenova.cn/compatible-mode/v1/")
+                base_url = api.OPENAI_BASE_URL)
 
 
 def ask_gpt(messages):
     response = client.chat.completions.create(
-        model="DeepSeek-V3",
+        model=api.OPENAI_MODEL,
         messages=messages
     )
     return response.choices[0].message.content

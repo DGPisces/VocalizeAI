@@ -31,6 +31,8 @@
    export OPENAI_API_KEY="你的OpenAI API密钥"
    export SENSENOVA_ACCESS_KEY_ID="你的Sensenova Access Key ID"
    export SENSENOVA_SECRET_ACCESS_KEY="你的Sensenova Secret Access Key"
+   export OPENAI_BASE_URL="你的OpenAI API基础URL" # 例如：https://api.sensenova.cn/compatible-mode/v1/
+   export OPENAI_MODEL="你使用的模型名称" # 例如：DeepSeek-V3
    ```
    **对于 Windows 用户 (使用 Command Prompt)**：
    在命令提示符中，可以使用 `set` 命令设置临时环境变量：
@@ -38,6 +40,8 @@
    set OPENAI_API_KEY="你的OpenAI API密钥"
    set SENSENOVA_ACCESS_KEY_ID="你的Sensenova Access Key ID"
    set SENSENOVA_SECRET_ACCESS_KEY="你的Sensenova Secret Access Key"
+   set OPENAI_BASE_URL="你的OpenAI API基础URL" REM 例如：https://api.sensenova.cn/compatible-mode/v1/
+   set OPENAI_MODEL="你使用的模型名称" REM 例如：DeepSeek-V3
    ```
    (请注意：这些环境变量只在当前命令提示符会话中有效。如果需要永久设置，请通过系统属性进行配置，或使用我们提供的 `run.bat` 脚本。)
 
@@ -115,6 +119,8 @@ This is an AI-powered restaurant reservation chatbot project, aiming to simplify
     export OPENAI_API_KEY="Your OpenAI API Key"
     export SENSENOVA_ACCESS_KEY_ID="Your Sensonova Access Key ID"
     export SENSENOVA_SECRET_ACCESS_KEY="Your Sensonova Secret Access Key"
+    export OPENAI_BASE_URL="Your OpenAI API Base URL" # For example: https://api.sensenova.cn/compatible-mode/v1/
+    export OPENAI_MODEL="Your Used Model Name" # For example: DeepSeek-V3
     ```
     **For Windows Users (Using Command Prompt)**:
     In the command prompt, you can use the `set` command to set temporary environment variables:
@@ -122,6 +128,8 @@ This is an AI-powered restaurant reservation chatbot project, aiming to simplify
     set OPENAI_API_KEY="Your OpenAI API Key"
     set SENSENOVA_ACCESS_KEY_ID="Your Sensonova Access Key ID"
     set SENSENOVA_SECRET_ACCESS_KEY="Your Sensonova Secret Access Key"
+    set OPENAI_BASE_URL="Your OpenAI API Base URL" REM For example: https://api.sensenova.cn/compatible-mode/v1/
+    set OPENAI_MODEL="Your Used Model Name" REM For example: DeepSeek-V3
     ```
     (Note: These environment variables are only valid for the current command prompt session. If you need to permanently set them, please configure them through system properties, or use our provided `run.bat` script.)
 
