@@ -51,7 +51,7 @@
 
    **对于 Linux / macOS 用户**：
    ```bash
-   python src/chatbot.py
+   python3 -m src.chatbot
    ```
    或者，您可以使用我们提供的 `run.sh` 脚本：
    ```bash
@@ -60,7 +60,7 @@
 
    **对于 Windows 用户**：
    ```cmd
-   python src/chatbot.py
+   python -m src.chatbot
    ```
    或者，您可以使用我们提供的 `run.bat` 脚本，它会自动设置环境变量并运行程序：
    ```cmd
@@ -139,7 +139,7 @@ This is an AI-powered restaurant reservation chatbot project, aiming to simplify
 
     **For Linux / macOS Users**:
     ```bash
-    python src/chatbot.py
+    python3 -m src.chatbot
     ```
     or, you can use our provided `run.sh` script:
     ```bash
@@ -148,7 +148,7 @@ This is an AI-powered restaurant reservation chatbot project, aiming to simplify
 
     **For Windows Users**:
     ```cmd
-    python src/chatbot.py
+    python -m src.chatbot
     ```
     or, you can use our provided `run.bat` script, which will automatically set environment variables and run the program:
     ```cmd
