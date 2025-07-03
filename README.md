@@ -13,7 +13,7 @@
 
 1. **克隆仓库**：
    ```bash
-   git clone <仓库地址>
+   git clone https://github.com/DGPisces/VocalizeAI
    cd Vocalize AI
    ```
 
@@ -24,17 +24,43 @@
    ```
 
 3. **配置 API 密钥**：
+
+   **对于 Linux / macOS 用户 (使用 Bash / Zsh 等 Shell)**：
    本项目使用环境变量加载 API 密钥。请在运行程序前，设置以下环境变量：
    ```bash
    export OPENAI_API_KEY="你的OpenAI API密钥"
    export SENSENOVA_ACCESS_KEY_ID="你的Sensenova Access Key ID"
    export SENSENOVA_SECRET_ACCESS_KEY="你的Sensenova Secret Access Key"
    ```
+   **对于 Windows 用户 (使用 Command Prompt)**：
+   在命令提示符中，可以使用 `set` 命令设置临时环境变量：
+   ```cmd
+   set OPENAI_API_KEY="你的OpenAI API密钥"
+   set SENSENOVA_ACCESS_KEY_ID="你的Sensenova Access Key ID"
+   set SENSENOVA_SECRET_ACCESS_KEY="你的Sensenova Secret Access Key"
+   ```
+   (请注意：这些环境变量只在当前命令提示符会话中有效。如果需要永久设置，请通过系统属性进行配置，或使用我们提供的 `run.bat` 脚本。)
+
    (请注意：在生产环境中，建议使用更安全的方式管理环境变量，例如使用 .env 文件并将其加入 .gitignore)
 
 4. **运行程序**：
+
+   **对于 Linux / macOS 用户**：
    ```bash
    python src/chatbot.py
+   ```
+   或者，您可以使用我们提供的 `run.sh` 脚本：
+   ```bash
+   ./run.sh
+   ```
+
+   **对于 Windows 用户**：
+   ```cmd
+   python src/chatbot.py
+   ```
+   或者，您可以使用我们提供的 `run.bat` 脚本，它会自动设置环境变量并运行程序：
+   ```cmd
+   run.bat
    ```
 
 ## 主要功能
@@ -71,7 +97,7 @@ This is an AI-powered restaurant reservation chatbot project, aiming to simplify
 
 1.  **Clone the Repository**:
     ```bash
-    git clone https://github.com/DGPisces/Vocalize-AI
+    git clone https://github.com/DGPisces/VocalizeAI
     cd Vocalize AI
     ```
 
@@ -82,17 +108,43 @@ This is an AI-powered restaurant reservation chatbot project, aiming to simplify
     ```
 
 3.  **Configure API Keys**:
+
+    **For Linux / macOS Users (Using Bash / Zsh etc. Shell)**:
     This project uses environment variables to load API keys. Please set the following environment variables before running the program:
     ```bash
     export OPENAI_API_KEY="Your OpenAI API Key"
     export SENSENOVA_ACCESS_KEY_ID="Your Sensonova Access Key ID"
     export SENSENOVA_SECRET_ACCESS_KEY="Your Sensonova Secret Access Key"
     ```
+    **For Windows Users (Using Command Prompt)**:
+    In the command prompt, you can use the `set` command to set temporary environment variables:
+    ```cmd
+    set OPENAI_API_KEY="Your OpenAI API Key"
+    set SENSENOVA_ACCESS_KEY_ID="Your Sensonova Access Key ID"
+    set SENSENOVA_SECRET_ACCESS_KEY="Your Sensonova Secret Access Key"
+    ```
+    (Note: These environment variables are only valid for the current command prompt session. If you need to permanently set them, please configure them through system properties, or use our provided `run.bat` script.)
+
     (Note: In a production environment, it is recommended to manage environment variables more securely, for example, by using a .env file and adding it to .gitignore)
 
 4.  **Run the Program**:
+
+    **For Linux / macOS Users**:
     ```bash
     python src/chatbot.py
+    ```
+    or, you can use our provided `run.sh` script:
+    ```bash
+    ./run.sh
+    ```
+
+    **For Windows Users**:
+    ```cmd
+    python src/chatbot.py
+    ```
+    or, you can use our provided `run.bat` script, which will automatically set environment variables and run the program:
+    ```cmd
+    run.bat
     ```
 
 ## Key Features
@@ -110,4 +162,5 @@ Contributions are welcome! If you have any suggestions for improvement or find b
 
 ## License
 
+This project is licensed under the MIT License. See the `LICENSE` file for details. 
 This project is licensed under the MIT License. See the `LICENSE` file for details. 

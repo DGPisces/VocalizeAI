@@ -1,0 +1,22 @@
+@echo off
+
+REM This script sets environment variables and runs the Vocalize AI Chatbot.
+
+REM --- Configuration ---
+REM Set your API keys here.
+REM It is recommended to replace these with actual keys or use a .env file for production.
+set OPENAI_API_KEY="你的OpenAI API密钥"
+set SENSENOVA_ACCESS_KEY_ID="你的Sensenova Access Key ID"
+set SENSENOVA_SECRET_ACCESS_KEY="你的Sensenova Secret Access Key"
+REM --- End Configuration ---
+
+echo Setting environment variables...
+echo OPENAI_API_KEY: %OPENAI_API_KEY%
+echo SENSENOVA_ACCESS_KEY_ID: %SENSENOVA_ACCESS_KEY_ID%
+echo SENSENOVA_SECRET_ACCESS_KEY: %SENSENOVA_SECRET_ACCESS_KEY%
+
+echo Running Vocalize AI Chatbot...
+python3 src/chatbot.py
+
+echo Script finished.
+pause 
