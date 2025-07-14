@@ -15,12 +15,11 @@ REM --- End Configuration ---
 echo Setting environment variables...
 echo OPENAI_API_KEY: %OPENAI_API_KEY%
 echo SENSENOVA_ACCESS_KEY_ID: %SENSENOVA_ACCESS_KEY_ID%
-echo SENSENOVA_SECRET_ACCESS_KEY: %SENSENOVA_SECRET_ACCESS_KEY%
 echo OPENAI_BASE_URL: %OPENAI_BASE_URL%
 echo OPENAI_MODEL: %OPENAI_MODEL%
 
 echo Running Vocalize AI Chatbot...
-python3 -m src.chatbot
+python3 src/chatbot.py
 
 echo Script finished.
 pause 

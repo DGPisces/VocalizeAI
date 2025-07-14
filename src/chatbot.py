@@ -1,19 +1,81 @@
 import re
 from openai import OpenAI
-from . import api
+import api
 import datetime
 import sensenova
+from google import genai
+from google.genai import types
+import os
+import pygame
+import io
+import tempfile
+import contextlib
+import wave
 
 sensenova.access_key_id = api.SENSENOVA_ACCESS_KEY_ID
-sensenova.secret_access_key = api.SENSENOVA_SECRET_ACCESS_KEY
 
 # 设置你的OpenAI API Key
-client = OpenAI(api_key=api.OPENAI_API_KEY,
+client_openai = OpenAI(api_key=api.OPENAI_API_KEY,
                 base_url = api.OPENAI_BASE_URL)
+client_google = genai.Client(api_key=api.GOOGLE_API_KEY)
 
+@contextlib.contextmanager
+def wave_file(filename, channels=1, rate=24000, sample_width=2):
+    with wave.open(filename, "wb") as wf:
+        wf.setnchannels(channels)
+        wf.setsampwidth(sample_width)
+        wf.setframerate(rate)
+        yield wf
+
+def play_audio_blob(blob):
+    # 初始化 pygame mixer
+    pygame.mixer.init()
+    
+    # 创建临时文件路径
+    with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
+        temp_file_path = temp_file.name
+    
+    try:
+        # 使用 wave 模块创建标准的 WAV 文件
+        with wave_file(temp_file_path, channels=1, rate=24000, sample_width=2) as wav:
+            wav.writeframes(blob.data)
+        
+        # 播放音频
+        pygame.mixer.music.load(temp_file_path)
+        pygame.mixer.music.play()
+        
+        # 等待播放完成
+        while pygame.mixer.music.get_busy():
+            pygame.time.wait(100)
+    finally:
+        # 清理临时文件
+        try:
+            os.unlink(temp_file_path)
+        except:
+            pass
+
+def play_audio(response):
+    play_audio_blob(response.candidates[0].content.parts[0].inline_data)
+
+def generate_voice_google(text):
+    response_voice = client_google.models.generate_content(
+        model=api.GOOGLE_MODEL_ID,
+        contents=[text],
+        config=types.GenerateContentConfig(
+            response_modalities = ["AUDIO"],
+            speech_config=types.SpeechConfig(
+                voice_config=types.VoiceConfig(
+                    prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                        voice_name = "Kore"
+                    )
+                )
+            )
+        )
+    )
+    play_audio(response_voice)
 
 def ask_gpt(messages):
-    response = client.chat.completions.create(
+    response = client_openai.chat.completions.create(
         model=api.OPENAI_MODEL,
         messages=messages
     )
@@ -59,6 +121,7 @@ def generate_ai_message_for_merchant(user_input, conversation_history):
         "你是餐厅预定助手。请以用户的身份，用最简洁、直接、事实、专业的口吻，向商家转述用户的完整预定需求。"
         "只传递用户核心意图和关键信息，严禁任何闲聊、主观感受、拟人化表达、多余修饰或表情符号。"
         "使用第一人称'我'或'我们'进行表达，例如：'我需要预定...'，'我们有5人...'。"
+        "重要：向商家提供完整的联系电话号码，不要隐藏任何数字，商家需要完整号码进行预定确认。"
     )
     if reflection:
         prompt = f"【请注意以下自我反思与改进建议：{reflection}】\n" + prompt
@@ -99,8 +162,9 @@ def generate_ai_message_for_merchant_from_user(user_input, conversation_history)
     prompt = (
         "你是餐厅预定助手。请以用户的身份，用最简洁、直接、事实、专业的口吻，将用户的最新决策或补充信息转述给商家。"
         "只传递用户核心意图和关键信息，严禁任何闲聊、主观感受、拟人化表达、多余修饰或表情符号。"
-        '例如："我同意七点的座位，请帮忙确认预定。"或"我的联系电话是138xxxx，请用此号确认预定。"'
+        '例如："我同意七点的座位，请帮忙确认预定。"或"我的联系电话是13812345678，请用此号确认预定。"'
         "使用第一人称'我'或'我们'进行表达。"
+        "重要：如果涉及联系电话，必须提供完整的号码，不要隐藏任何数字，商家需要完整号码进行预定确认。"
     )
     if reflection:
         prompt = f"【请注意以下自我反思与改进建议：{reflection}】\n" + prompt
@@ -274,6 +338,7 @@ def main():
     # 联系商家
     ai_to_merchant = generate_ai_message_for_merchant(user_input, "\n".join(conversation_history))
     print(f"AI对商家: {ai_to_merchant}")
+    generate_voice_google(ai_to_merchant)
     log_dialogue_entry("AI", ai_to_merchant)
     conversation_history.append(f"商家: {ai_to_merchant}")
     log_dialogue_entry("商家", ai_to_merchant)
@@ -329,6 +394,7 @@ def main():
                 log_dialogue_entry("用户", user_response_for_merchant_relay)
                 ai_to_merchant_from_user_supplement = generate_ai_message_for_merchant_from_user(user_response_for_merchant_relay, "\n".join(conversation_history))
                 print(f"AI对商家: {ai_to_merchant_from_user_supplement}")
+                generate_voice_google(ai_to_merchant_from_user_supplement)
                 log_dialogue_entry("AI", ai_to_merchant_from_user_supplement)
                 conversation_history.append(f"商家: {ai_to_merchant_from_user_supplement}")
                 log_dialogue_entry("商家", ai_to_merchant_from_user_supplement)
@@ -343,6 +409,7 @@ def main():
                 log_dialogue_entry("用户", user_input_supplement)
                 ai_to_merchant_from_user_supplement = generate_ai_message_for_merchant_from_user(user_input_supplement, "\n".join(conversation_history))
                 print(f"AI对商家: {ai_to_merchant_from_user_supplement}")
+                generate_voice_google(ai_to_merchant_from_user_supplement)
                 log_dialogue_entry("AI", ai_to_merchant_from_user_supplement)
                 conversation_history.append(f"商家: {ai_to_merchant_from_user_supplement}")
                 log_dialogue_entry("商家", ai_to_merchant_from_user_supplement)

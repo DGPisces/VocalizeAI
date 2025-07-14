@@ -1,2 +1,4 @@
 openai
-sensenova 
+sensenova
+pygame
+google-genai 
