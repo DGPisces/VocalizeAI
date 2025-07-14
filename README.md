@@ -1,174 +1,207 @@
 # Vocalize AI Chatbot
 
-这是一个基于AI的餐厅预订聊天机器人项目，旨在通过自然语言处理技术简化用户预订餐厅的流程。
+这是一个基于AI的餐厅预订聊天机器人项目，采用现代化的模块化架构，支持语音交互和AI自我反思功能。
+
+## 核心功能
+
+### 智能餐厅预订助手
+- 通过自然语言对话帮助用户预订餐厅
+- 自动收集预订所需信息（时间、人数、联系方式等）
+- 智能判断信息完整性，主动追问缺失信息
+
+### 多方对话协调
+- **用户 ↔ AI ↔ 商家** 三方对话桥梁
+- AI以用户身份向商家转述预订需求
+- AI向用户转述商家回复并引导下一步操作
+
+### 语音交互功能
+- 使用Google AI Gemini 2.5 Flash Preview TTS引擎生成语音
+- 支持实时语音播放，提升用户体验
+- 智能语音反馈系统
+
+### AI自我反思与改进
+- 记录完整对话过程并自动分析表现
+- 识别对话中的问题并生成改进建议
+- 智能精炼反思日志，持续优化对话质量
 
 ## 项目结构
 
-- `src/`：包含项目的核心源代码，例如 `chatbot.py` (主逻辑) 和 `api.py` (API 密钥配置)。
-- `logs/`：存放运行日志和AI自我反思日志。
-- `requirements.txt`：列出项目所需的所有Python依赖。
-- `.gitignore`：Git 版本控制忽略文件配置。
+```
+Vocalize AI/
+├── src/                     # 核心源代码目录
+│   ├── __init__.py         # 包初始化文件
+│   ├── config.py           # 配置管理模块 
+│   ├── logger.py           # 统一日志管理 
+│   ├── ai_clients.py       # AI客户端管理 
+│   ├── audio.py            # 音频处理模块 
+│   ├── chatbot_core.py     # 核心业务逻辑 
+│   ├── chatbot.py          # 主程序入口 
+│   └── api.py              # 兼容性保留 
+├── logs/                   # 日志文件目录
+├── requirements.txt        # Python依赖列表
+├── pyproject.toml         # 项目配置文件 
+├── run.sh                 # Linux/macOS启动脚本
+├── run.bat                # Windows启动脚本
+└── README.md              # 项目文档
+
+
 
 ## 安装与运行
 
-1. **克隆仓库**：
+### 1. 克隆仓库
+```bash
+git clone https://github.com/DGPisces/VocalizeAI
+cd "Vocalize AI"
+```
+
+### 2. 安装依赖
+```bash
+pip install -r requirements.txt
+```
+
+**核心依赖包**：
+- `openai` - OpenAI/DeepSeek API客户端
+- `sensenova` - SenseNova API支持
+- `pygame` - 音频播放功能
+- `google-genai` - Google AI语音生成
+
+### 3. 配置 API 密钥
+
+项目支持多种配置方式，请选择适合您的方法：
+
+#### 方法一：环境变量配置 (推荐)
+
+**Linux / macOS**：
+```bash
+export OPENAI_API_KEY="你的OpenAI API密钥"
+export SENSENOVA_ACCESS_KEY_ID="你的Sensenova Access Key ID"  
+export SENSENOVA_SECRET_ACCESS_KEY="你的Sensenova Secret Access Key"
+export GOOGLE_API_KEY="你的Google API密钥"
+export OPENAI_BASE_URL="https://api.sensenova.cn/compatible-mode/v1/"
+export OPENAI_MODEL="DeepSeek-V3"
+export GOOGLE_MODEL_ID="gemini-2.5-flash-preview-tts"
+```
+
+**Windows**：
+```cmd
+set OPENAI_API_KEY=你的OpenAI API密钥
+set SENSENOVA_ACCESS_KEY_ID=你的Sensenova Access Key ID
+set SENSENOVA_SECRET_ACCESS_KEY=你的Sensenova Secret Access Key  
+set GOOGLE_API_KEY=你的Google API密钥
+set OPENAI_BASE_URL=https://api.sensenova.cn/compatible-mode/v1/
+set OPENAI_MODEL=DeepSeek-V3
+set GOOGLE_MODEL_ID=gemini-2.5-flash-preview-tts
+```
+
+#### 方法二：使用启动脚本
+
+编辑对应的启动脚本，填入您的API密钥：
+- **Linux/macOS**: 编辑 `run.sh`
+- **Windows**: 编辑 `run.bat`
+
+### 4. 运行程序
+
+#### 方法一：直接运行 (推荐)
+```bash
+# Linux/macOS
+python3 -m src.chatbot
+
+# Windows  
+python3 -m src.chatbot
+```
+
+#### 方法二：使用启动脚本
+```bash
+# Linux/macOS
+./run.sh
+
+# Windows
+run.bat
+```
+
+## 💡 使用示例
+
+```
+用户：我想预订明晚7点的位子，4个人
+AI：请提供您的联系方式以便确认预订
+用户：我的电话是138xxxxxxxx  
+AI→商家：我需要预订明天晚上7点的位子，4人用餐，联系电话138xxxxxxxx
+商家：7点已满，6点或8点可以吗？
+AI→用户：商家表示7点已满，可以选择6点或8点，您希望哪个时间？
+用户：6点可以
+AI→商家：我同意6点的时间，请确认预订
+商家：好的，已为您预订成功  
+AI→用户：预订成功！为您安排了明天晚上6点的位子...
+```
+
+## 🏗️ 技术架构
+
+### 模块化设计
+- **配置管理** (`config.py`) - 统一的环境变量和配置管理
+- **日志系统** (`logger.py`) - 对话日志和反思日志管理
+- **AI客户端** (`ai_clients.py`) - OpenAI和Google AI客户端管理
+- **音频处理** (`audio.py`) - 语音生成和播放功能
+- **核心逻辑** (`chatbot_core.py`) - 餐厅预订业务逻辑
+- **主程序** (`chatbot.py`) - 应用程序入口和流程控制
+
+## 🔍 故障排除
+
+### 常见问题
+
+1. **缺少环境变量**
    ```bash
-   git clone https://github.com/DGPisces/VocalizeAI
-   cd Vocalize AI
+   WARNING - 缺少以下环境变量: GOOGLE_API_KEY
    ```
+   **解决方案**: 按照配置部分设置所需的API密钥
 
-2. **安装依赖**：
-   推荐使用 `pip` 安装项目依赖：
+2. **模块导入错误**
    ```bash
-   pip install -r requirements.txt
+   ModuleNotFoundError: No module named 'src'
    ```
+   **解决方案**: 确保在项目根目录运行，使用 `python3 -m src.chatbot`
 
-3. **配置 API 密钥**：
-
-   **对于 Linux / macOS 用户 (使用 Bash / Zsh 等 Shell)**：
-   本项目使用环境变量加载 API 密钥。请在运行程序前，设置以下环境变量：
+3. **Python命令不存在**
    ```bash
-   export OPENAI_API_KEY="你的OpenAI API密钥"
-   export SENSENOVA_ACCESS_KEY_ID="你的Sensenova Access Key ID"
-   export SENSENOVA_SECRET_ACCESS_KEY="你的Sensenova Secret Access Key"
-   export OPENAI_BASE_URL="你的OpenAI API基础URL" # 例如：https://api.sensenova.cn/compatible-mode/v1/
-   export OPENAI_MODEL="你使用的模型名称" # 例如：DeepSeek-V3
+   command not found: python
    ```
-   **对于 Windows 用户 (使用 Command Prompt)**：
-   在命令提示符中，可以使用 `set` 命令设置临时环境变量：
-   ```cmd
-   set OPENAI_API_KEY="你的OpenAI API密钥"
-   set SENSENOVA_ACCESS_KEY_ID="你的Sensenova Access Key ID"
-   set SENSENOVA_SECRET_ACCESS_KEY="你的Sensenova Secret Access Key"
-   set OPENAI_BASE_URL="你的OpenAI API基础URL" REM 例如：https://api.sensenova.cn/compatible-mode/v1/
-   set OPENAI_MODEL="你使用的模型名称" REM 例如：DeepSeek-V3
-   ```
-   (请注意：这些环境变量只在当前命令提示符会话中有效。如果需要永久设置，请通过系统属性进行配置，或使用我们提供的 `run.bat` 脚本。)
+   **解决方案**: 使用 `python3` 代替 `python`
 
-   (请注意：在生产环境中，建议使用更安全的方式管理环境变量，例如使用 .env 文件并将其加入 .gitignore)
+### 🔧 安装验证
 
-4. **运行程序**：
+我们提供了一个便捷的检查脚本来验证项目是否正确设置：
 
-   **对于 Linux / macOS 用户**：
-   ```bash
-   python3 -m src.chatbot
-   ```
-   或者，您可以使用我们提供的 `run.sh` 脚本：
-   ```bash
-   ./run.sh
-   ```
+```bash
+python3 check_setup.py
+```
 
-   **对于 Windows 用户**：
-   ```cmd
-   python3 -m src.chatbot
-   ```
-   或者，您可以使用我们提供的 `run.bat` 脚本，它会自动设置环境变量并运行程序：
-   ```cmd
-   run.bat
-   ```
+这个脚本会检查：
+- Python版本兼容性
+- 依赖包安装状态
+- 项目文件完整性
+- 模块导入功能
+- 配置验证
+- 应用初始化
 
-## 主要功能
+### 手动测试
+```bash
+# 测试模块导入
+python3 -c "import src.config; print('配置模块正常')"
 
-- **智能问答与信息补全**：AI 助手能够根据用户预订需求进行多轮对话，智能判断缺失信息（如联系方式、时间、人数等），并主动向用户追问以完成预订。
-- **专业商家沟通**：以简洁、直接、专业的口吻，将用户的完整预订需求和最新决策准确转述给商家。
-- **清晰用户反馈**：根据商家回复，用自然、友好、专业的语言向用户转述商家最新回复或最终预订结果，并引导用户进行下一步决策。
-- **智能对话管理**：能够分类商家回复类型（如"等待处理"、"预订成功"、"需要用户补充信息"），并根据不同类型智能驱动对话流程。
-- **AI 自我反思与改进**：具备AI自我反思机制，记录对话过程中的表现，指出存在的问题，并精炼改进建议，以持续提升对话质量。
-- **完整日志记录**：自动记录用户、AI 和商家之间的完整对话日志，便于复盘和分析。
+# 测试配置验证
+python3 -c "from src.config import get_config; print('缺失配置:', get_config().get_missing_configs())"
 
-## 贡献
-
-欢迎贡献！如果你有任何改进建议或发现bug，请提交 Pull Request 或 Issue。
+# 测试程序初始化
+python3 -c "from src.chatbot import ChatbotApp; app = ChatbotApp(); print('程序初始化成功')"
+```
 
 ## 许可证
 
-本项目采用 MIT 许可证，详情请参阅 `LICENSE` 文件。
+本项目采用 MIT 许可证。详情请参阅 [LICENSE](LICENSE) 文件。
 
 ---
 
-# Vocalize AI Chatbot
+<div align="center">
 
-This is an AI-powered restaurant reservation chatbot project, aiming to simplify the user's restaurant booking process through natural language processing technology.
+**🌟 如果这个项目对您有帮助，请考虑给我们一个星标！**
 
-## Project Structure
-
-- `src/`: Contains the core source code of the project, such as `chatbot.py` (main logic) and `api.py` (API key configuration).
-- `logs/`: Stores runtime logs and AI self-reflection logs.
-- `requirements.txt`: Lists all Python dependencies required by the project.
-- `.gitignore`: Git version control ignore file configuration.
-
-## Installation and Running
-
-1.  **Clone the Repository**:
-    ```bash
-    git clone https://github.com/DGPisces/VocalizeAI
-    cd Vocalize AI
-    ```
-
-2.  **Install Dependencies**:
-    It is recommended to install project dependencies using `pip`:
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-3.  **Configure API Keys**:
-
-    **For Linux / macOS Users (Using Bash / Zsh etc. Shell)**:
-    This project uses environment variables to load API keys. Please set the following environment variables before running the program:
-    ```bash
-    export OPENAI_API_KEY="Your OpenAI API Key"
-    export SENSENOVA_ACCESS_KEY_ID="Your Sensonova Access Key ID"
-    export SENSENOVA_SECRET_ACCESS_KEY="Your Sensonova Secret Access Key"
-    export OPENAI_BASE_URL="Your OpenAI API Base URL" # For example: https://api.sensenova.cn/compatible-mode/v1/
-    export OPENAI_MODEL="Your Used Model Name" # For example: DeepSeek-V3
-    ```
-    **For Windows Users (Using Command Prompt)**:
-    In the command prompt, you can use the `set` command to set temporary environment variables:
-    ```cmd
-    set OPENAI_API_KEY="Your OpenAI API Key"
-    set SENSENOVA_ACCESS_KEY_ID="Your Sensonova Access Key ID"
-    set SENSENOVA_SECRET_ACCESS_KEY="Your Sensonova Secret Access Key"
-    set OPENAI_BASE_URL="Your OpenAI API Base URL" REM For example: https://api.sensenova.cn/compatible-mode/v1/
-    set OPENAI_MODEL="Your Used Model Name" REM For example: DeepSeek-V3
-    ```
-    (Note: These environment variables are only valid for the current command prompt session. If you need to permanently set them, please configure them through system properties, or use our provided `run.bat` script.)
-
-    (Note: In a production environment, it is recommended to manage environment variables more securely, for example, by using a .env file and adding it to .gitignore)
-
-4.  **Run the Program**:
-
-    **For Linux / macOS Users**:
-    ```bash
-    python3 -m src.chatbot
-    ```
-    or, you can use our provided `run.sh` script:
-    ```bash
-    ./run.sh
-    ```
-
-    **For Windows Users**:
-    ```cmd
-    python3 -m src.chatbot
-    ```
-    or, you can use our provided `run.bat` script, which will automatically set environment variables and run the program:
-    ```cmd
-    run.bat
-    ```
-
-## Key Features
-
--   **Intelligent Questioning & Information Completion**: The AI assistant can conduct multi-turn conversations based on user reservation requests, intelligently identify missing information (such as contact details, time, number of people, etc.), and proactively ask the user for it to complete the reservation.
--   **Professional Merchant Communication**: Accurately relays the user's complete reservation needs and latest decisions to the merchant in a concise, direct, and professional tone.
--   **Clear User Feedback**: Based on the merchant's reply, it naturally, friendly, and professionally conveys the merchant's latest response or final reservation result to the user, and guides the user to the next step.
--   **Smart Dialogue Management**: Capable of classifying merchant reply types (e.g., "waiting for processing", "reservation successful", "user needs to provide more info"), and intelligently driving the dialogue process based on different types.
--   **AI Self-Reflection & Improvement**: Equipped with an AI self-reflection mechanism, it records its performance during the conversation, identifies problems, and refines improvement suggestions to continuously enhance dialogue quality.
--   **Comprehensive Log Recording**: Automatically records complete dialogue logs between users, AI, and merchants for review and analysis.
-
-## Contribution
-
-Contributions are welcome! If you have any suggestions for improvement or find bugs, please submit a Pull Request or Issue.
-
-## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for details. 
-This project is licensed under the MIT License. See the `LICENSE` file for details. 
+</div> 

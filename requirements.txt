@@ -1,4 +1,5 @@
+# 核心依赖
 openai
 sensenova
 pygame
-google-genai 
+google-genai

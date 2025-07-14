@@ -1,3 +1,16 @@
+"""
+API配置文件（已废弃）
+请使用 src.config 模块替代此文件
+"""
+import warnings
+
+warnings.warn(
+    "src.api 模块已废弃，请使用 src.config 模块",
+    DeprecationWarning,
+    stacklevel=2
+)
+
+# 为了向后兼容，保留原有的变量定义
 import os
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
