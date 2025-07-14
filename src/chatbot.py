@@ -8,7 +8,7 @@ from typing import List
 from .config import get_config, validate_config
 from .logger import setup_logging, get_dialogue_logger, get_reflection_logger
 from .ai_clients import get_ai_manager
-from .audio import generate_and_play_voice
+from .audio import generate_and_play_voice, record_and_transcribe
 from .chatbot_core import get_chatbot
 
 class ChatbotApp:
@@ -105,7 +105,36 @@ class ChatbotApp:
     def _merchant_conversation_loop(self, conversation_history: List[str]) -> None:
         """商家对话循环"""
         while True:
-            merchant_input = input("商家，请输入你的回复（输入'结束'完成预定）：\n> ")
+            # 询问商家输入方式
+            print("\n商家，请选择回复方式：")
+            print("1. 文字输入")
+            print("2. 语音输入")
+            print("输入'结束'完成预定")
+            
+            choice = input("请选择 (1/2) 或输入'结束'：\n> ").strip()
+            
+            if choice == "结束":
+                print("预定流程结束。")
+                break
+            elif choice == "1":
+                # 文字输入
+                merchant_input = input("商家，请输入你的回复：\n> ")
+            elif choice == "2":
+                # 语音输入
+                print("商家，请开始说话，2秒静音后自动停止录音...")
+                try:
+                    merchant_input = record_and_transcribe()
+                    if not merchant_input:
+                        print("未识别到语音内容，请重试")
+                        continue
+                    print(f"识别到的内容: {merchant_input}")
+                except Exception as e:
+                    logging.error(f"语音录制失败: {e}")
+                    print("语音录制失败，请使用文字输入")
+                    merchant_input = input("商家，请输入你的回复：\n> ")
+            else:
+                print("无效选择，请重新选择")
+                continue
             
             if merchant_input.strip() == "结束":
                 print("预定流程结束。")

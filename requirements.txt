@@ -3,3 +3,9 @@ openai
 pygame
 google-genai
 python-dotenv
+
+# 音频录制和处理
+sounddevice
+numpy
+openai-whisper
+scipy
