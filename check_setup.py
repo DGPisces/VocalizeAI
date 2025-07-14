@@ -20,13 +20,15 @@ def check_python_version():
 def check_dependencies():
     """检查依赖包"""
     print("\n🔍 检查依赖包...")
-    required_packages = ['openai', 'sensenova', 'pygame', 'google.genai']
+    required_packages = ['openai', 'pygame', 'google.genai', 'python-dotenv']
     missing_packages = []
     
     for package in required_packages:
         try:
             if package == 'google.genai':
                 import google.genai
+            elif package == 'python-dotenv':
+                import dotenv
             else:
                 __import__(package)
             print(f"✅ {package}")
@@ -108,6 +110,52 @@ def check_configuration():
         print(f"❌ 配置检查失败: {e}")
         return False
 
+def check_scripts():
+    """检查启动脚本"""
+    print("\n🔍 检查启动脚本...")
+    scripts = [
+        {'path': 'run.sh', 'platform': 'Linux/macOS'},
+        {'path': 'run.bat', 'platform': 'Windows'}
+    ]
+    
+    script_issues = []
+    for script in scripts:
+        script_path = Path(script['path'])
+        if script_path.exists():
+            print(f"✅ {script['path']} ({script['platform']})")
+            
+            # 检查 run.sh 的执行权限
+            if script['path'] == 'run.sh':
+                import stat
+                file_stat = script_path.stat()
+                if file_stat.st_mode & stat.S_IEXEC:
+                    print(f"  ├─ 执行权限: ✅")
+                else:
+                    print(f"  ├─ 执行权限: ❌ 缺少执行权限")
+                    script_issues.append(f"{script['path']} 缺少执行权限")
+            
+            # 检查脚本内容完整性
+            try:
+                with open(script_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    if 'Vocalize AI Chatbot' in content and '请选择配置方式' in content:
+                        print(f"  ├─ 脚本内容: ✅")
+                    else:
+                        print(f"  ├─ 脚本内容: ❌ 脚本内容不完整")
+                        script_issues.append(f"{script['path']} 内容不完整")
+            except Exception as e:
+                print(f"  ├─ 脚本内容: ❌ 读取失败: {e}")
+                script_issues.append(f"{script['path']} 读取失败")
+        else:
+            print(f"❌ {script['path']} ({script['platform']})")
+            script_issues.append(f"缺少 {script['path']}")
+    
+    if script_issues:
+        print(f"\n📜 脚本问题: {script_issues}")
+        print("💡 请检查启动脚本是否正确设置")
+        return False
+    return True
+
 def check_app_initialization():
     """检查应用初始化"""
     print("\n🔍 检查应用初始化...")
@@ -129,6 +177,7 @@ def main():
         ("Python版本", check_python_version),
         ("依赖包", check_dependencies),
         ("项目结构", check_project_structure),
+        ("启动脚本", check_scripts),
         ("模块导入", check_module_imports),
         ("配置检查", check_configuration),
         ("应用初始化", check_app_initialization)

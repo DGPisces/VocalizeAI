@@ -40,7 +40,7 @@ class ChatbotApp:
             # 清空对话日志开始新会话
             self.dialogue_logger.clear_log()
             
-            print("=== 语音预定订餐系统 Demo ===")
+            print("=== 语音预定订餐系统 ===")
             conversation_history = []
             
             # 用户输入初始需求

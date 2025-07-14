@@ -14,17 +14,42 @@ from .config import get_config
 class DialogueLogger:
     """对话日志管理器"""
     
-    def __init__(self, log_path: Optional[str] = None):
+    def __init__(self, log_path: Optional[str] = None, max_lines: int = 100):
         self.config = get_config()
         self.log_path = log_path or self.config.ai_generated_log
+        self.max_lines = max_lines
         self._ensure_log_dir()
     
     def _ensure_log_dir(self) -> None:
         """确保日志目录存在"""
         self.config.ensure_log_dir()
     
+    def _count_lines(self) -> int:
+        """统计日志文件行数"""
+        try:
+            if not os.path.exists(self.log_path):
+                return 0
+            with open(self.log_path, "r", encoding="utf-8") as f:
+                return sum(1 for _ in f)
+        except Exception:
+            return 0
+    
+    def _auto_cleanup(self) -> None:
+        """自动清理日志文件"""
+        if self._count_lines() >= self.max_lines:
+            try:
+                with open(self.log_path, "w", encoding="utf-8") as f:
+                    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    f.write(f"==== {timestamp} ====\n")
+                    f.write("[系统]: 日志已自动清理\n")
+            except Exception as e:
+                logging.error(f"自动清理日志失败: {e}")
+    
     def log_entry(self, speaker: str, content: str) -> None:
         """记录对话条目"""
+        # 检查是否需要自动清理
+        self._auto_cleanup()
+        
         timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         try:
             with open(self.log_path, "a", encoding="utf-8") as f:
@@ -127,11 +152,17 @@ class ReflectionLogger:
 
 def setup_logging(level: int = logging.INFO) -> None:
     """设置系统日志"""
+    config = get_config()
+    config.ensure_log_dir()
+    
+    # 清空已有的处理器
+    logging.getLogger().handlers.clear()
+    
+    # 只使用文件日志，不输出到控制台
     logging.basicConfig(
         level=level,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.StreamHandler(),
             logging.FileHandler('logs/system.log', encoding='utf-8')
         ]
     )

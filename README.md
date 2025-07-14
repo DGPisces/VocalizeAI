@@ -74,8 +74,6 @@ pip install -r requirements.txt
 **Linux / macOS**：
 ```bash
 export OPENAI_API_KEY="你的OpenAI API密钥"
-export SENSENOVA_ACCESS_KEY_ID="你的Sensenova Access Key ID"  
-export SENSENOVA_SECRET_ACCESS_KEY="你的Sensenova Secret Access Key"
 export GOOGLE_API_KEY="你的Google API密钥"
 export OPENAI_BASE_URL="https://api.sensenova.cn/compatible-mode/v1/"
 export OPENAI_MODEL="DeepSeek-V3"
@@ -85,19 +83,61 @@ export GOOGLE_MODEL_ID="gemini-2.5-flash-preview-tts"
 **Windows**：
 ```cmd
 set OPENAI_API_KEY=你的OpenAI API密钥
-set SENSENOVA_ACCESS_KEY_ID=你的Sensenova Access Key ID
-set SENSENOVA_SECRET_ACCESS_KEY=你的Sensenova Secret Access Key  
 set GOOGLE_API_KEY=你的Google API密钥
 set OPENAI_BASE_URL=https://api.sensenova.cn/compatible-mode/v1/
 set OPENAI_MODEL=DeepSeek-V3
 set GOOGLE_MODEL_ID=gemini-2.5-flash-preview-tts
 ```
 
-#### 方法二：使用启动脚本
+#### 方法二：.env 文件配置 (推荐) 🆕
 
-编辑对应的启动脚本，填入您的API密钥：
-- **Linux/macOS**: 编辑 `run.sh`
-- **Windows**: 编辑 `run.bat`
+使用 `.env` 文件可以更方便地管理环境变量：
+
+1. **复制模板文件**：
+```bash
+cp .env.example .env
+```
+
+2. **编辑 .env 文件**，填入您的真实API密钥：
+```bash
+# 使用您喜欢的编辑器打开 .env 文件
+nano .env
+# 或
+vim .env
+# 或使用图形界面编辑器
+```
+
+3. **配置示例**：
+```env
+# OpenAI API 配置
+OPENAI_API_KEY=sk-your-actual-openai-key-here
+OPENAI_BASE_URL=https://api.sensenova.cn/compatible-mode/v1/
+OPENAI_MODEL=DeepSeek-V3
+
+# Google AI 配置
+GOOGLE_API_KEY=your-google-api-key-here
+GOOGLE_MODEL_ID=gemini-2.5-flash-preview-tts
+```
+
+> ⚠️ **重要**：`.env` 文件已自动加入 `.gitignore`，不会被提交到Git仓库，保护您的API密钥安全。
+
+#### 方法三：使用启动脚本
+
+启动脚本提供交互式配置选择：
+
+**Linux/macOS**:
+```bash
+./run.sh
+```
+
+**Windows**:
+```cmd
+run.bat
+```
+
+脚本会提示您选择配置方式：
+- 选项1：使用 .env 文件或系统环境变量
+- 选项2：使用脚本内置配置（需要先编辑脚本文件设置API密钥）
 
 ### 4. 运行程序
 

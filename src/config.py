@@ -7,6 +7,11 @@ import logging
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    load_dotenv = None
+
 
 @dataclass
 class Config:
@@ -15,10 +20,6 @@ class Config:
     openai_api_key: Optional[str] = None
     openai_base_url: str = "https://api.sensenova.cn/compatible-mode/v1/"
     openai_model: str = "DeepSeek-V3"
-    
-    # SenseNova配置
-    sensenova_access_key_id: Optional[str] = None
-    sensenova_secret_access_key: Optional[str] = None
     
     # Google配置
     google_api_key: Optional[str] = None
@@ -37,13 +38,15 @@ class Config:
     
     @classmethod
     def from_env(cls) -> 'Config':
-        """从环境变量加载配置"""
+        """从环境变量和.env文件加载配置"""
+        # 尝试加载 .env 文件
+        if load_dotenv is not None:
+            load_dotenv()
+        
         return cls(
             openai_api_key=os.getenv("OPENAI_API_KEY"),
             openai_base_url=os.getenv("OPENAI_BASE_URL", cls.openai_base_url),
             openai_model=os.getenv("OPENAI_MODEL", cls.openai_model),
-            sensenova_access_key_id=os.getenv("SENSENOVA_ACCESS_KEY_ID"),
-            sensenova_secret_access_key=os.getenv("SENSENOVA_SECRET_ACCESS_KEY"),
             google_api_key=os.getenv("GOOGLE_API_KEY"),
             google_model_id=os.getenv("GOOGLE_MODEL_ID", cls.google_model_id)
         )
@@ -55,9 +58,6 @@ class Config:
         # 检查必需的API密钥
         validation_results['openai_api_key'] = bool(self.openai_api_key)
         validation_results['google_api_key'] = bool(self.google_api_key)
-        validation_results['sensenova_keys'] = bool(
-            self.sensenova_access_key_id and self.sensenova_secret_access_key
-        )
         
         return validation_results
     
@@ -70,8 +70,6 @@ class Config:
             missing.append('OPENAI_API_KEY')
         if not validation_results['google_api_key']:
             missing.append('GOOGLE_API_KEY')
-        if not validation_results['sensenova_keys']:
-            missing.extend(['SENSENOVA_ACCESS_KEY_ID', 'SENSENOVA_SECRET_ACCESS_KEY'])
             
         return missing
     

@@ -7,7 +7,6 @@ from typing import Optional, List, Dict, Any
 from openai import OpenAI
 from google import genai
 from google.genai import types
-import sensenova
 
 from .config import get_config, validate_config
 
@@ -30,10 +29,6 @@ class AIClientManager:
             # 验证配置
             if not validate_config():
                 return False
-            
-            # 初始化SenseNova
-            if self.config.sensenova_access_key_id:
-                sensenova.access_key_id = self.config.sensenova_access_key_id
             
             # 初始化OpenAI客户端
             if self.config.openai_api_key:
