@@ -69,7 +69,7 @@ class AudioRecorder:
                         logging.info("检测到静音，停止录音")
                         self.recording = False
     
-    def start_recording(self) -> None:
+    def start_recording(self):
         """开始录音"""
         with self._lock:
             self.recording = True
@@ -134,7 +134,7 @@ class SpeechToText:
         self.model = None
         self.config = get_config()
         
-    def _ensure_model_loaded(self) -> None:
+    def _ensure_model_loaded(self):
         """确保whisper模型已加载"""
         if self.model is None:
             logging.info(f"加载Whisper模型: {self.model_name}")
@@ -159,7 +159,6 @@ class SpeechToText:
             # whisper期望的音频格式是float32，采样率16000
             # 如果采样率不同，需要重采样
             if self.config.audio_rate != 16000:
-                # 简单的重采样（实际项目中可能需要更复杂的重采样）
                 import scipy.signal
                 audio_data = scipy.signal.resample(
                     audio_data, 
@@ -207,7 +206,7 @@ class AudioPlayer:
         self.config = get_config()
         self._initialized = False
     
-    def _ensure_initialized(self) -> None:
+    def _ensure_initialized(self):
         """确保pygame mixer已初始化"""
         if not self._initialized:
             try:
@@ -218,7 +217,7 @@ class AudioPlayer:
                 logging.error(f"音频播放器初始化失败: {e}")
                 raise
     
-    def play_audio_blob(self, blob: Any) -> None:
+    def play_audio_blob(self, blob: Any):
         """播放音频数据块"""
         self._ensure_initialized()
         
