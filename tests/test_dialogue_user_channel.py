@@ -442,7 +442,9 @@ async def test_user_takeover_text_routes_to_takeover_queue() -> None:
     out = await channel.dispatch_one_input()
 
     assert out is None
-    assert takeover_q.get_nowait() == ("yes please", "en")
+    text, lang, passthrough_id = takeover_q.get_nowait()
+    assert (text, lang) == ("yes please", "en")
+    assert isinstance(passthrough_id, str) and passthrough_id
     assert hint_q.empty()
 
 
@@ -541,7 +543,9 @@ async def test_takeover_text_emits_takeover_passthrough_transcript() -> None:
 
     await channel.dispatch_one_input()
 
-    assert takeover_q.get_nowait() == ("yes please", "en")
+    text, lang, passthrough_id = takeover_q.get_nowait()
+    assert (text, lang) == ("yes please", "en")
+    assert isinstance(passthrough_id, str) and passthrough_id
     assert any(
         frame["type"] == "transcript_update"
         and frame["role"] == "user_takeover_passthrough"
