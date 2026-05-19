@@ -15,14 +15,13 @@ IFS=$'\n\t'
 # Usage:
 #   bash scripts/smoke.sh
 #   VOCALIZE_API_BASE=http://127.0.0.1:8080 bash scripts/smoke.sh
-#   VOCALIZE_INVITE_TOKEN=<token> VOCALIZE_API_BASE=https://api.example.com bash scripts/smoke.sh
+#   VOCALIZE_API_BASE=https://api.example.com bash scripts/smoke.sh
 #
 # Exits 0 on all-pass; exits 1 with descriptive message on any failure.
 # Total runtime budget: ~20 seconds (WS step has a 10s timeout).
 # ---------------------------------------------------------------------------
 
 BASE="${VOCALIZE_API_BASE:-http://127.0.0.1:8000}"
-TOKEN="${VOCALIZE_INVITE_TOKEN:-}"
 
 SMOKE_START=$(date +%s)
 SID=""
@@ -81,10 +80,9 @@ echo ""
 echo "[2/5] POST ${BASE}/api/sessions..."
 
 SESSIONS_RESP=$(curl -fsS --max-time 10 -X POST "${BASE}/api/sessions" \
-    -H "X-Invite-Token: ${TOKEN}" \
     -H "Content-Type: application/json" \
     -d '{"default_lang":"zh","auto_translate_merchant":true}' 2>/dev/null) \
-    || fail "[2/5]" "curl failed — is the backend running and invite token correct?"
+    || fail "[2/5]" "curl failed — is the backend running?"
 
 SID=$(echo "$SESSIONS_RESP" | jq -r '.session_id' 2>/dev/null) \
     || fail "[2/5]" "response is not valid JSON: ${SESSIONS_RESP}"

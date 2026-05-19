@@ -78,19 +78,18 @@ $EDITOR .env
 | `VOCALIZE_HOST` | default ok | uvicorn bind host; `127.0.0.1` for local dev, `0.0.0.0` for production |
 | `VOCALIZE_PORT` | default ok | uvicorn bind port; default `8080` (note: dev `main.py` defaults to 8000) |
 | `ORCHESTRATOR_LISTEN_PORT` | default ok | Pi service port; default `8080` (legacy; mirrors `VOCALIZE_PORT`) |
-| `VOCALIZE_INVITE_TOKEN` | required when non-localhost | Shared invite secret for `POST /api/sessions`; **gate is disabled when `VOCALIZE_HOST=127.0.0.1` and this var is unset** — localhost-dev shortcut |
-| `VOCALIZE_WS_BASE_URL` | required when non-localhost | Public WS base URL (e.g. `wss://vocalize-api.example.com`); startup raises if missing in non-localhost mode (D-11) |
+| `VOCALIZE_WS_BASE_URL` | required when non-localhost | Public WS base URL (e.g. `wss://api.example.com`); startup raises if missing in non-localhost mode (D-11) |
 | `VOCALIZE_CORS_ORIGINS` | default ok | Comma-separated allowed CORS origins; auto-picked from VOCALIZE_HOST in dev mode |
 | `DEFAULT_LANGUAGE` | default ok | Session default language; `zh` or `en`; default `zh` |
 | `LOG_DIR` | default ok | Log directory; default `logs` |
 | `NEXT_PUBLIC_VOCALIZE_API_BASE_URL` | yes for frontend | Frontend API base URL baked into the Next.js JS bundle at build time |
 | `NEXT_PUBLIC_VOCALIZE_WS_BASE_URL` | optional | Frontend WS base; derived from `NEXT_PUBLIC_VOCALIZE_API_BASE_URL` if absent |
-| `NEXT_PUBLIC_VOCALIZE_INVITE_TOKEN` | yes for frontend in prod | Invite token baked into Next.js JS bundle; required for the frontend to authenticate session creation |
 
-**Localhost-dev shortcut:** when `VOCALIZE_HOST` is `127.0.0.1` and
-`VOCALIZE_INVITE_TOKEN` is unset, the `X-Invite-Token` gate on `POST /api/sessions`
-is disabled. This means you can `curl http://127.0.0.1:8000/api/sessions` without
-supplying a token — convenient for local development.
+**Backend auth posture:** v1 ships no request-level auth on
+`POST /api/sessions` or the WebSocket. For non-localhost deployments,
+restrict reachability at the network or proxy layer (Cloudflare Access,
+VPN, reverse-proxy auth, etc.). Per-user auth is v1.x scope
+(requirement `AUTH-01`).
 
 **Minimum for local dev (no GPU):**
 ```bash
@@ -156,8 +155,7 @@ Exit code 0 = the development environment is working. The smoke script exercises
 6 round-trips: health check, create session, set task, WS upgrade + send/recv,
 delete session. Total runtime is ~20 seconds.
 
-The smoke script uses `VOCALIZE_API_BASE` (default `http://127.0.0.1:8000`) and
-`VOCALIZE_INVITE_TOKEN` (default empty, gate disabled in localhost-dev mode).
+The smoke script uses `VOCALIZE_API_BASE` (default `http://127.0.0.1:8000`).
 
 ---
 

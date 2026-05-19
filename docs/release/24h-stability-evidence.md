@@ -87,7 +87,6 @@ transient failures acceptable).
 Driver command used:
 ```bash
 export VOCALIZE_API_BASE=http://localhost:8080
-export VOCALIZE_INVITE_TOKEN=<token>
 python scripts/stability-24h-driver.py \
   --duration-minutes 1440 \
   --scenario balance_inquiry_en_query \

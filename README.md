@@ -18,16 +18,6 @@ inquiries, status checks, and more. An OSS mirror is available at
 [github.com/DGPisces/VocalizeAI](https://github.com/DGPisces/VocalizeAI)
 under Apache 2.0.
 
-## Why VocalizeAI is invite-only right now
-
-v1 uses a shared invite token (`X-Invite-Token` header on `POST /api/sessions`)
-distributed out-of-band. This is a long-lived shared secret — no rotation flow
-exists in v1; rotation requires a deploy-time env-var change plus frontend
-rebuild. Per-user authentication is v1.x scope (requirement AUTH-01).
-
-Anyone who holds the token can use the service. To request an invite token,
-email [40358663+DGPisces@users.noreply.github.com](mailto:40358663+DGPisces@users.noreply.github.com).
-
 ## Quick Start
 
 **Prerequisites:** Python 3.11+, Node 20+, git, curl. Optional: `uv` (auto-installed by the script).
@@ -121,9 +111,8 @@ VocalizeAI/
 
 | Variable | Purpose |
 |----------|---------|
-| `VOCALIZE_INVITE_TOKEN` | Shared invite token for `POST /api/sessions`; required when `VOCALIZE_HOST != 127.0.0.1` |
-| `VOCALIZE_WS_BASE_URL` | WebSocket base URL returned to clients (e.g., `wss://vocalize-api.example.com`); required in non-localhost mode to prevent Host-header spoofing |
-| `VOCALIZE_CORS_ORIGINS` | Comma-separated allowed CORS origins; defaults to `https://vocalize.example.com` in non-localhost mode |
+| `VOCALIZE_WS_BASE_URL` | WebSocket base URL returned to clients (e.g., `wss://api.example.com`); required in non-localhost mode to prevent Host-header spoofing |
+| `VOCALIZE_CORS_ORIGINS` | Comma-separated allowed CORS origins; **required** in non-localhost mode (no default) |
 
 See `.env.example` for the full env-var inventory including LLM, GPU service,
 and frontend build-time variables.

@@ -67,7 +67,7 @@ test(<area>): <verb> <noun>
 refactor(<area>): <verb> <noun>
 ```
 
-Examples: `feat(server): add X-Invite-Token gate`, `fix(frontend): handle 401 on session create`.
+Examples: `feat(server): bound task length`, `fix(frontend): handle 401 on session create`.
 
 ## Branches
 

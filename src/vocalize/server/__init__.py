@@ -64,8 +64,6 @@ def create_app() -> FastAPI:
             Raises RuntimeError at startup when absent in non-localhost mode
             (closes Host-header spoofing vector D-11 — see CONCERNS.md).
             In localhost-dev mode the WS URL is derived from the request base_url.
-        VOCALIZE_INVITE_TOKEN — shared invite secret for POST /api/sessions;
-            gate disabled in localhost-dev mode when unset (D-08).
         GPU_HOST / SENSEVOICE_WS_PORT / COSYVOICE_WS_PORT — GPU service targets.
     """
     app = FastAPI(title="VocalizeAI", version="0.1.0")
@@ -99,7 +97,7 @@ def create_app() -> FastAPI:
         allow_origins=cors_origins,
         allow_credentials=False,
         allow_methods=["GET", "POST", "DELETE"],  # D-10: explicit list; no wildcards
-        allow_headers=["Content-Type", "X-Invite-Token"],  # explicit; covers auth header
+        allow_headers=["Content-Type"],  # explicit; no wildcards
     )
 
     registry = SessionRegistry()

@@ -7,10 +7,9 @@ from __future__ import annotations
 
 import logging
 import os
-import secrets
 from typing import Literal
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from vocalize.server.review import register_review_routes
@@ -52,45 +51,6 @@ class SetTaskResponse(BaseModel):
     ok: bool = True
 
 
-def _check_invite_token(
-    x_invite_token: str | None = Header(default=None, alias="X-Invite-Token"),
-) -> None:
-    """Verify the shared invite secret on session creation (D-08).
-
-    Gate behaviour:
-    - If VOCALIZE_INVITE_TOKEN is not configured (localhost-dev mode), the
-      check is skipped so local development keeps working without any env setup.
-    - In production (non-localhost host), the token is required and must
-      match via constant-time comparison to avoid timing oracles (T-04c-02).
-
-    # TODO(v1.x AUTH-01): no rotation; this is a long-lived shared secret.
-    #   Per-user auth replaces this gate in v1.x.
-    """
-    from vocalize.config import get_config
-
-    expected = get_config().invite_token
-    if expected is None:
-        return  # localhost-dev mode: gate disabled
-    try:
-        match = secrets.compare_digest(x_invite_token or "", expected)
-    except (TypeError, ValueError):
-        # secrets.compare_digest raises TypeError when either string contains
-        # non-ASCII characters. This is operator misconfiguration (e.g. a
-        # Unicode passphrase). Log once and return 401 — do not propagate as
-        # a 500 which would increment vocalize_error_log_total toward the
-        # D-05 budget (T-04c-02).
-        log.warning(
-            "VOCALIZE_INVITE_TOKEN contains non-ASCII characters; "
-            "compare_digest raised TypeError — returning 401"
-        )
-        match = False
-    if not match:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="invalid or missing X-Invite-Token",
-        )
-
-
 def register_session_routes(
     app: FastAPI,
     *,
@@ -108,7 +68,6 @@ def register_session_routes(
     async def create_session(
         request: Request,
         payload: CreateSessionRequest | None = None,
-        _gate: None = Depends(_check_invite_token),
     ) -> CreateSessionResponse:
         registry.sweep_stale(max_age_s=1800)
         payload = payload or CreateSessionRequest()
