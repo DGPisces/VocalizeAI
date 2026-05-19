@@ -10,13 +10,13 @@ import os
 import secrets
 from typing import Literal
 
-log = logging.getLogger(__name__)
-
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from vocalize.server.review import register_review_routes
 from vocalize.server.state import SessionRegistry
+
+log = logging.getLogger(__name__)
 
 
 class CreateSessionRequest(BaseModel):
