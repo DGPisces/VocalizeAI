@@ -1,0 +1,209 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend lint and scoped tests
+    runs-on: [self-hosted, macOS]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install backend dependencies
+        # Use system python3.11 (homebrew on the self-hosted Mac runner)
+        # instead of actions/setup-python@v5, which hard-codes the
+        # GitHub-hosted /Users/runner/hostedtoolcache path and fails on a
+        # self-hosted Mac with `mkdir: /Users/runner: Permission denied`
+        # regardless of AGENT_TOOLSDIRECTORY / RUNNER_TOOL_CACHE / TOOLCACHE_ROOT.
+        run: |
+          python3.11 -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Ruff
+        run: |
+          . .venv/bin/activate
+          ruff check \
+            src/vocalize/server/frames.py \
+            src/vocalize/server/runner.py \
+            tests/test_server_frames.py \
+            tests/test_server_ws_integration.py \
+            tests/test_runner_phase_transitions.py \
+            tests/integration/ai_merchant.py \
+            tests/integration/test_ai_merchant.py \
+            tests/integration/test_judge.py \
+            tests/integration/conftest.py
+
+      - name: Mypy
+        run: |
+          . .venv/bin/activate
+          mypy \
+            src/vocalize/server/frames.py \
+            src/vocalize/server/runner.py \
+            tests/integration/ai_merchant.py \
+            tests/integration/test_ai_merchant.py \
+            tests/integration/judge.py \
+            tests/integration/test_judge.py \
+            tests/integration/conftest.py \
+            --ignore-missing-imports \
+            --no-error-summary
+
+      - name: Pytest
+        run: |
+          . .venv/bin/activate
+          pytest \
+            tests/test_server_frames.py \
+            tests/test_server_ws_integration.py \
+            tests/test_runner_phase_transitions.py \
+            tests/integration/test_ai_merchant.py \
+            tests/integration/test_judge.py \
+            -k 'merchant_text_inject or test_frames or text_frames or ai_merchant or judge' \
+            -q
+
+  frontend:
+    name: Frontend type and unit tests
+    runs-on: [self-hosted, macOS]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: TypeScript type check
+        working-directory: frontend
+        run: npx tsc --noEmit --pretty false
+
+      - name: Vitest
+        working-directory: frontend
+        run: npm test
+
+  playwright-loopback:
+    name: Playwright loopback
+    runs-on: [self-hosted, macOS]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install backend dependencies
+        # See backend job for why we skip actions/setup-python@v5 on the
+        # self-hosted Mac runner.
+        run: |
+          python3.11 -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browser
+        working-directory: frontend
+        run: npm exec -- playwright install --with-deps chromium
+
+      - name: Free up port 8000 for loopback server
+        # Self-hosted Mac may have a dev uvicorn running on 8000. Playwright
+        # webServer.reuseExistingServer is !CI so it won't reuse it; if the
+        # port is busy, Playwright errors out. Kill anything bound to 8000
+        # before starting. The developer can restart their uvicorn after CI.
+        run: |
+          lsof -ti :8000 | xargs kill -9 2>/dev/null || true
+
+      - name: Playwright integration tests
+        working-directory: frontend
+        run: >
+          npm run test:integration --
+          ../tests/integration/laptop-loopback.spec.ts
+          ../tests/integration/post-call-callback.spec.ts
+
+  ai-merchant:
+    name: AI merchant scenarios
+    runs-on: [self-hosted, macOS]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install backend dependencies
+        # See backend job for why we skip actions/setup-python@v5 on the
+        # self-hosted Mac runner.
+        run: |
+          python3.11 -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Run AI merchant scenarios (deterministic judge)
+        # Intentionally does NOT pass --ai-provider-required and does NOT
+        # inject DEEPSEEK_API_KEY: the current text-bypass harness only
+        # drives merchant-side frames (merchant_text_inject) and cannot
+        # produce the user-side actions that 7 of 8 CI scenarios require
+        # (preflight supplements, clarification acks, user takeover, WS
+        # reconnect, on-demand translate). Running real DeepSeek-V4-Pro
+        # against that limited evidence yields 23/24 must-pass failures
+        # that are structural harness gaps, not regressions. The
+        # deterministic judge (deterministic_judge_case) instead asserts
+        # evidence-shape invariants on every PR.
+        #
+        # Real-LLM judge coverage is preserved by the release-audio gate
+        # (`pytest --release-audio --ai-provider-required`) which runs
+        # manually before each release with DEEPSEEK_API_KEY exported in
+        # the operator shell.
+        #
+        # Extending the harness to drive user-side flows is tracked as a
+        # follow-up (see STATE.md "B3b text-bypass harness gap").
+        env:
+          VOCALIZE_ENABLE_TEST_FRAMES: "1"
+        run: |
+          export AI_MERCHANT_PR_COMMAND="pytest tests/integration/test_ai_merchant.py -q"
+          # python3.11 (not `python`) because the self-hosted Mac runner
+          # has homebrew python3.11 on PATH but no `python` alias.
+          python3.11 - <<'PY'
+          import os
+
+          command = os.environ["AI_MERCHANT_PR_COMMAND"]
+          forbidden = ("--release-audio", "release_audio")
+          selected = [token for token in forbidden if token in command]
+          if selected:
+              raise SystemExit(
+                  "pull_request AI merchant command must not select "
+                  f"release-audio cases: {selected}"
+              )
+          PY
+          . .venv/bin/activate
+          $AI_MERCHANT_PR_COMMAND
+
+      - name: Upload AI merchant failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ai-merchant-evidence
+          path: tests/integration/evidence/
+          if-no-files-found: ignore
+          retention-days: 14

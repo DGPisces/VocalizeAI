@@ -1,0 +1,65 @@
+name: "Bug report"
+description: "Something is broken"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Before submitting, please search existing
+        issues to avoid duplicates. For security vulnerabilities, see
+        [SECURITY.md](../../SECURITY.md) instead of filing a public issue.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: "What happened?"
+      description: "A clear description of the bug. What did you see?"
+      placeholder: "Describe the unexpected behavior..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: "Steps to reproduce"
+      description: "Minimal steps to reproduce the issue reliably."
+      render: text
+      placeholder: |
+        1. Start the backend with `uvicorn vocalize.main:app ...`
+        2. Open the web console at http://127.0.0.1:3000
+        3. Set a task: "..."
+        4. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: "What did you expect?"
+      description: "What should have happened instead?"
+      placeholder: "I expected the system to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: "Environment"
+      description: "Your setup details."
+      placeholder: |
+        - OS: macOS 15 / Ubuntu 24.04 / Raspberry Pi OS
+        - Python version: 3.11.x
+        - Node version: 20.x
+        - Deployment mode: local dev / Pi production / other
+        - VocalizeAI version / commit hash:
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Relevant logs"
+      description: "Paste any relevant log output. Use `journalctl -u vocalize` on Pi, or the uvicorn terminal output locally."
+      render: shell
+    validations:
+      required: false

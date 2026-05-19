@@ -1,0 +1,6 @@
+{
+  "user_task": "我的车上周在高速上被追尾了，我要报保险理赔，保单号是P20260501001",
+  "expected_category": "insurance-claim",
+  "min_h_slots": 4,
+  "should_refuse": false
+}

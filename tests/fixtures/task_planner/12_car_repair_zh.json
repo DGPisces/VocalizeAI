@@ -1,0 +1,6 @@
+{
+  "user_task": "我的宝马X5发动机故障灯亮了，想预约周五下午去4S店检修",
+  "expected_category": "car-repair",
+  "min_h_slots": 4,
+  "should_refuse": false
+}

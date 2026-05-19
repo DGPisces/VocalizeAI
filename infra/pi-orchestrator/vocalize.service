@@ -1,0 +1,19 @@
+[Unit]
+Description=VocalizeAI Orchestrator
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Install path is /opt/vocalize by convention.
+# Override by editing WorkingDirectory/ExecStart/EnvironmentFile,
+# or by running setup.sh which generates this unit with VOCALIZE_HOME set.
+Type=simple
+User=vocalize
+WorkingDirectory=/opt/vocalize
+ExecStart=/opt/vocalize/.venv/bin/python -m vocalize.main
+Restart=always
+RestartSec=5
+EnvironmentFile=/opt/vocalize/.env
+
+[Install]
+WantedBy=multi-user.target

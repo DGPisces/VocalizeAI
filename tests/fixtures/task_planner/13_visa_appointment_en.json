@@ -1,0 +1,6 @@
+{
+  "user_task": "I need to schedule a visa appointment at the US consulate in Shanghai for a B1 business visa",
+  "expected_category": "visa-appointment",
+  "min_h_slots": 4,
+  "should_refuse": false
+}

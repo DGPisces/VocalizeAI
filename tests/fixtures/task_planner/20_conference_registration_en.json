@@ -1,0 +1,6 @@
+{
+  "user_task": "Register me for the PyCon 2026 conference, I want the full-access pass with the workshop add-on",
+  "expected_category": "conference-registration",
+  "min_h_slots": 4,
+  "should_refuse": false
+}

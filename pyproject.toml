@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vocalize-ai"
+version = "0.1.0"
+description = "Bilingual (zh/en) universal phone-task AI agent"
+authors = [{name = "DGPisces", email = "gaodingyun2@gmail.com"}]
+license = "Apache-2.0"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.40",
+    "websockets>=12.0",
+    "sounddevice>=0.4.7",
+    "pydantic>=2.5",
+    "prometheus-fastapi-instrumentator>=7.1.0,<8",
+    "prometheus-client>=0.20",  # direct import in src/vocalize/server/metrics.py
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "python-dotenv>=1.0",
+    # Phase 4 client-side VAD for end-of-speech detection on the user mic
+    # (RESEARCH §"webrtcvad Client EOS"). Falls back to webrtcvad-wheels>=2.0.10
+    # on arm64 hosts where the upstream wheel is missing.
+    "webrtcvad>=2.0.10",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "PyYAML>=6.0.3",
+    "httpx>=0.27",
+    "ruff>=0.5",
+    "mypy>=1.10",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["vocalize*"]
+
+# Phase 4 dialogue prompts ship as markdown alongside the package so
+# `importlib.resources.files("vocalize.dialogue.prompts").joinpath("...md")`
+# resolves at runtime in installed wheels (not just editable installs).
+[tool.setuptools.package-data]
+"vocalize.dialogue.prompts" = ["*.md"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.deptry]
+known_first_party = ["vocalize"]
+extend_exclude = ["infra", "frontend", ".venv"]
+
+[tool.deptry.per_rule_ignores]
+DEP002 = ["uvicorn"]  # entry-point only

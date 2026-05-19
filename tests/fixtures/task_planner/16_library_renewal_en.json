@@ -1,0 +1,6 @@
+{
+  "user_task": "I need to renew the three books I checked out last month, my library card number is LIB20260501",
+  "expected_category": "library-renewal",
+  "min_h_slots": 3,
+  "should_refuse": false
+}

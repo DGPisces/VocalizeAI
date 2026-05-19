@@ -1,0 +1,162 @@
+{
+  "appName": "VocalizeAI",
+  "start": "开始预订",
+  "taskLabel": "你要 AI 帮你打什么电话？",
+  "taskPlaceholder": "帮我订今晚 7 点 4 个人的位子",
+  "submitTask": "提交任务",
+  "create_session": {
+    "status": "正在创建会话...",
+    "error": "创建会话失败：{message}",
+    "retry": "重试"
+  },
+  "handoverLocked": "信息还不够，暂时不能接管",
+  "audioReady": "音频已连接",
+  "audioUnavailable": "音频不可用",
+  "typeReply": "输入补充信息",
+  "send": "发送",
+  "session": {
+    "recovered": "连接已恢复，进入通话回顾。"
+  },
+  "ai_status": {
+    "filler_active": "AI 正在让对方稍等…",
+    "keepalive_active": "AI 正在告诉对方确认中…",
+    "escalation_warning": "对方表现不耐烦，AI 即将转入回拨流程"
+  },
+  "supplement_input": {
+    "send": "发送",
+    "placeholder_preflight": "随时补充：例如改成两个人",
+    "placeholder_default": "提示 AI",
+    "placeholder_takeover": "我来说"
+  },
+  "preflight_chat": {
+    "aria_label": "预通话对话",
+    "supplement_label": "补充"
+  },
+  "transcript_stream": {
+    "aria_label": "通话记录",
+    "supplement_label": "用户提示 AI",
+    "takeover_label": "用户(直传)",
+    "callback_label": "回拨通话",
+    "translate_button": "译"
+  },
+  "clarification": {
+    "answer": "回答",
+    "submit": "提交",
+    "answer_label": "你的回答",
+    "toast_title": "AI 需要你回答一个问题",
+    "timed_out_note": "你没及时回答，AI 已让对方稍候回拨。"
+  },
+  "hangup": {
+    "button": "挂断",
+    "confirm_question": "确定挂断这通电话吗？",
+    "confirm": "确认挂断",
+    "cancel": "取消"
+  },
+  "user_takeover": {
+    "active": "我来说",
+    "inactive": "我来接话",
+    "relay_hint": "用你的语言输入，AI 会用商家的语言转述给对方。",
+    "cross_lang_notice": "跨语言接管将在 v1.x 提供。当前可换用商家语言输入。"
+  },
+  "handover": {
+    "title": "准备好把电话交给 AI 了",
+    "step_pickup": "拿起 iPhone",
+    "step_speakerphone": "打开扬声器",
+    "step_place_near_laptop": "把它放在笔记本附近",
+    "takeover_button": "AI 接管",
+    "checking_mic": "检查麦克风...",
+    "disabled_tooltip": "信息已变,请等准备就绪",
+    "mic_error": "麦克风不可用。请允许浏览器使用麦克风后再接管。"
+  },
+  "readiness": {
+    "ready": "信息已足够，可以接管",
+    "waiting": "等待关键信息",
+    "missing": "缺少: {fields}"
+  },
+  "merchant_lang": {
+    "label": "商家语言",
+    "zh": "中文",
+    "en": "English",
+    "auto": "自动",
+    "save": "保存"
+  },
+  "preflight_summary": {
+    "ai": "AI",
+    "user": "你",
+    "no_summary": "暂无信息",
+    "expand": "展开 Q&A",
+    "collapse": "收起"
+  },
+  "settings": {
+    "title": "设置",
+    "close": "关闭",
+    "device_section": "设备"
+  },
+  "device_settings": {
+    "microphone": "麦克风",
+    "speaker": "扬声器",
+    "default": "默认",
+    "aec": "回声消除",
+    "auto_translate": "自动翻译商家话术",
+    "switching_status": "正在切换设备…",
+    "switch_success": "设备已切换",
+    "mic_switch_failed": "无法切换麦克风，已恢复到上一个可用设备。请检查浏览器权限后再试。",
+    "speaker_fallback_warning": "当前浏览器不支持指定扬声器输出，已使用默认扬声器。",
+    "test_microphone": "测试麦克风",
+    "recording_status": "正在录音，3 秒后自动停止…",
+    "play_recording": "播放录音",
+    "recording_unsupported": "当前浏览器不支持录音回放，但仍可查看实时音量。",
+    "test_speaker": "测试扬声器",
+    "refresh_devices": "刷新设备",
+    "permission_hint": "允许麦克风权限后可以显示真实设备名称。"
+  },
+  "post_call_review": {
+    "title": "通话结束 · 请确认 AI 跟商家说的内容",
+    "empty_state": "通话顺利完成，所有信息均已确认 ✓",
+    "back": "返回",
+    "confirm_correct": "确认正确",
+    "flag_wrong": "指出错误",
+    "correct_value": "正确值",
+    "note_optional": "备注（可选）",
+    "submit_correction": "提交",
+    "pending_callbacks": "待回拨",
+    "dial_now": "立刻拨",
+    "cancel": "取消",
+    "undo_cancel": "撤销取消",
+    "start_new_call": "开始新通话",
+    "start_new_call_confirm_heading": "开始新通话",
+    "start_new_call_confirm_body": "开始新通话会结束当前会话，并从空白信息重新开始。",
+    "start_new_call_confirm_primary": "开始",
+    "start_new_call_confirm_cancel": "取消",
+    "status_completed": "已完成",
+    "status_interrupted": "已中断",
+    "status_escalated": "已升级",
+    "segments": "通话片段",
+    "segment_title": "片段 {index}",
+    "segment_interrupted": "{time} 中断",
+    "callback_status_queued": "待回拨",
+    "callback_status_in_progress": "回拨中",
+    "callback_status_completed": "已完成",
+    "callback_status_failed": "失败",
+    "callback_status_cancelled": "已取消",
+    "callback_status_triggered": "已触发",
+    "loading": "正在加载复盘…"
+  },
+  "errors": {
+    "code_1001": "尚未提交任务描述",
+    "code_1002": "信息尚未准备好，不能接管",
+    "code_1003": "原始消息已过期或不存在",
+    "code_1004": "翻译服务暂不可用",
+    "code_1005": "找不到回拨条目",
+    "code_1006": "找不到 assumption",
+    "code_1007": "参数错误",
+    "code_2000": "处理失败",
+    "ws_disconnect": "连接已断开",
+    "unknown": "发生未知错误"
+  },
+  "language_toggle": {
+    "switch_aria": "切换语言",
+    "current_zh": "中",
+    "current_en": "EN"
+  }
+}

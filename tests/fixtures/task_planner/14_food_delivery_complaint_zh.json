@@ -1,0 +1,6 @@
+{
+  "user_task": "我昨天点的外卖送错了，我点的是红烧牛肉面收到的是酸辣粉，我要投诉",
+  "expected_category": "food-delivery-complaint",
+  "min_h_slots": 3,
+  "should_refuse": false
+}

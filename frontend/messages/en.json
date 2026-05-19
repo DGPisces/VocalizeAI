@@ -1,0 +1,162 @@
+{
+  "appName": "VocalizeAI",
+  "start": "Start",
+  "taskLabel": "What phone task should the AI handle?",
+  "taskPlaceholder": "Book a table for 4 at 7 pm tonight",
+  "submitTask": "Submit task",
+  "create_session": {
+    "status": "Creating session...",
+    "error": "Could not create session: {message}",
+    "retry": "Retry"
+  },
+  "handoverLocked": "More info is needed before handover",
+  "audioReady": "Audio connected",
+  "audioUnavailable": "Audio unavailable",
+  "typeReply": "Type additional info",
+  "send": "Send",
+  "session": {
+    "recovered": "Connection recovered. Review your call below."
+  },
+  "ai_status": {
+    "filler_active": "AI is asking the merchant to hold…",
+    "keepalive_active": "AI is reassuring the merchant…",
+    "escalation_warning": "Merchant is impatient; AI will hand off to the callback flow"
+  },
+  "supplement_input": {
+    "send": "Send",
+    "placeholder_preflight": "Add more info anytime — e.g. change to 2 people",
+    "placeholder_default": "Hint to AI",
+    "placeholder_takeover": "I'll speak"
+  },
+  "preflight_chat": {
+    "aria_label": "Preflight conversation",
+    "supplement_label": "Note"
+  },
+  "transcript_stream": {
+    "aria_label": "Call transcript",
+    "supplement_label": "User hint",
+    "takeover_label": "User (direct)",
+    "callback_label": "Callback",
+    "translate_button": "Translate"
+  },
+  "clarification": {
+    "answer": "Answer",
+    "submit": "Submit",
+    "answer_label": "Your answer",
+    "toast_title": "AI needs your input",
+    "timed_out_note": "You didn't answer in time; the AI told the merchant we'd call back."
+  },
+  "hangup": {
+    "button": "Hang up",
+    "confirm_question": "End this call now?",
+    "confirm": "Confirm hang up",
+    "cancel": "Cancel"
+  },
+  "user_takeover": {
+    "active": "I'm speaking",
+    "inactive": "Take over",
+    "relay_hint": "Type in your language — the AI will speak it to the merchant in their language.",
+    "cross_lang_notice": "Cross-language takeover will arrive in v1.x. For now, type in the merchant's language."
+  },
+  "handover": {
+    "title": "Ready to hand the call to the AI",
+    "step_pickup": "Pick up the iPhone",
+    "step_speakerphone": "Enable speakerphone",
+    "step_place_near_laptop": "Place it near the laptop",
+    "takeover_button": "AI takeover",
+    "checking_mic": "Checking microphone...",
+    "disabled_tooltip": "Info changed, waiting for readiness",
+    "mic_error": "Microphone unavailable. Allow browser microphone access before takeover."
+  },
+  "readiness": {
+    "ready": "Info ready, AI can take over",
+    "waiting": "Waiting for key info",
+    "missing": "Missing: {fields}"
+  },
+  "merchant_lang": {
+    "label": "Merchant",
+    "zh": "Chinese",
+    "en": "English",
+    "auto": "Auto",
+    "save": "Save"
+  },
+  "preflight_summary": {
+    "ai": "AI",
+    "user": "You",
+    "no_summary": "No info yet",
+    "expand": "Expand Q&A",
+    "collapse": "Collapse"
+  },
+  "settings": {
+    "title": "Settings",
+    "close": "Close",
+    "device_section": "Devices"
+  },
+  "device_settings": {
+    "microphone": "Microphone",
+    "speaker": "Speaker",
+    "default": "Default",
+    "aec": "Echo cancellation",
+    "auto_translate": "Auto-translate merchant",
+    "switching_status": "Switching devices…",
+    "switch_success": "Device switched",
+    "mic_switch_failed": "Could not switch microphone. Restored the previous working device. Check browser permissions and try again.",
+    "speaker_fallback_warning": "This browser does not support selecting speaker output; using the default speaker.",
+    "test_microphone": "Test microphone",
+    "recording_status": "Recording; stops automatically in 3 seconds…",
+    "play_recording": "Play recording",
+    "recording_unsupported": "This browser does not support recording playback, but live level still works.",
+    "test_speaker": "Test speaker",
+    "refresh_devices": "Refresh devices",
+    "permission_hint": "Allow microphone access to show real device names."
+  },
+  "post_call_review": {
+    "title": "Call ended — please confirm what the AI told the merchant",
+    "empty_state": "Call completed; everything confirmed ✓",
+    "back": "Back",
+    "confirm_correct": "Confirm correct",
+    "flag_wrong": "Flag as wrong",
+    "correct_value": "Correct value",
+    "note_optional": "Note (optional)",
+    "submit_correction": "Submit",
+    "pending_callbacks": "Pending callbacks",
+    "dial_now": "Dial now",
+    "cancel": "Cancel",
+    "undo_cancel": "Undo cancel",
+    "start_new_call": "Start new call",
+    "start_new_call_confirm_heading": "Start a new call",
+    "start_new_call_confirm_body": "Starting a new call will end the current session and begin with a blank slate.",
+    "start_new_call_confirm_primary": "Start",
+    "start_new_call_confirm_cancel": "Cancel",
+    "status_completed": "Completed",
+    "status_interrupted": "Interrupted",
+    "status_escalated": "Escalated",
+    "segments": "Call segments",
+    "segment_title": "Segment {index}",
+    "segment_interrupted": "Interrupted at {time}",
+    "callback_status_queued": "Queued",
+    "callback_status_in_progress": "In progress",
+    "callback_status_completed": "Completed",
+    "callback_status_failed": "Failed",
+    "callback_status_cancelled": "Cancelled",
+    "callback_status_triggered": "Triggered",
+    "loading": "Loading review…"
+  },
+  "errors": {
+    "code_1001": "Task description not submitted yet",
+    "code_1002": "Info not ready yet, cannot take over",
+    "code_1003": "Original message expired or missing",
+    "code_1004": "Translation service unavailable",
+    "code_1005": "Callback entry not found",
+    "code_1006": "Assumption not found",
+    "code_1007": "Invalid parameter",
+    "code_2000": "Processing failed",
+    "ws_disconnect": "Connection lost",
+    "unknown": "An unknown error occurred"
+  },
+  "language_toggle": {
+    "switch_aria": "Switch language",
+    "current_zh": "中",
+    "current_en": "EN"
+  }
+}

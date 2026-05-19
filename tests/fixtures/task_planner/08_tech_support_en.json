@@ -1,0 +1,6 @@
+{
+  "user_task": "Call Adobe support for me - my laptop keeps freezing when I run Photoshop, ask them to help me troubleshoot.",
+  "expected_category": "tech-support",
+  "min_h_slots": 3,
+  "should_refuse": false
+}

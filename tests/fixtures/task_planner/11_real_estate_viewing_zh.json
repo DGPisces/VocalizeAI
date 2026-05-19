@@ -1,0 +1,6 @@
+{
+  "user_task": "帮我约一个看房时间，朝阳区大望路的那个两居室，周末下午方便",
+  "expected_category": "real-estate-viewing",
+  "min_h_slots": 4,
+  "should_refuse": false
+}

@@ -1,0 +1,517 @@
+scenarios:
+  - id: preflight_supplement
+    gate: ci
+    behavior: preflight supplement
+    task: Book a restaurant table while the user adds missing details during preflight.
+    user_lang: zh
+    merchant_lang: zh
+    checks:
+      - id: supplement_accepted
+        description: User supplement is absorbed before handover readiness.
+        must_pass: true
+      - id: no_microphone_required
+        description: Preflight remains text-only with no browser microphone dependency.
+        must_pass: true
+      - id: readiness_updated
+        description: Readiness changes only after required slot details are present.
+        must_pass: true
+      - id: transcript_preserved
+        description: Supplement text remains visible in transcript evidence.
+        must_pass: true
+    seeds:
+      - id: direct
+        merchant_style: direct
+        merchant_turns:
+          - "请问订哪一天、几点、几位？"
+          - "好的，请留一个姓名和电话。"
+      - id: impatient
+        merchant_style: impatient
+        merchant_turns:
+          - "信息还不完整，麻烦快一点。"
+          - "没有姓名我没法继续。"
+      - id: follow_up
+        merchant_style: follow_up
+        merchant_turns:
+          - "可以，我还需要确认是否要包间。"
+          - "请再确认一下到店时间。"
+
+  - id: handover_readiness
+    gate: ci
+    behavior: handover readiness
+    task: Confirm the AI only enters the merchant call after backend readiness.
+    user_lang: zh
+    merchant_lang: zh
+    checks:
+      - id: early_handover_rejected
+        description: Handover before readiness returns a clear error.
+        must_pass: true
+      - id: readiness_gate_passes
+        description: Ready-to-dial phase appears after critical slots are filled.
+        must_pass: true
+      - id: call_listening_ack
+        description: call_listening is acknowledged only after readiness passes.
+        must_pass: true
+      - id: no_user_override
+        description: User cannot bypass readiness with a UI-only action.
+        must_pass: true
+    seeds:
+      - id: direct
+        merchant_style: direct
+        merchant_turns:
+          - "请问准备好了吗？"
+          - "可以开始确认。"
+      - id: impatient
+        merchant_style: impatient
+        merchant_turns:
+          - "还没准备好就先别打过来。"
+          - "请把信息一次说完整。"
+      - id: follow_up
+        merchant_style: follow_up
+        merchant_turns:
+          - "我会等你们准备好。"
+          - "还需要确认联系人。"
+
+  - id: clarification_answer
+    gate: ci
+    behavior: clarification answer
+    task: Merchant asks a question that requires a user clarification answer.
+    user_lang: zh
+    merchant_lang: zh
+    checks:
+      - id: clarification_requested
+        description: Backend requests user clarification with countdown metadata.
+        must_pass: true
+      - id: answer_relayed
+        description: User answer is relayed back to the merchant.
+        must_pass: true
+      - id: call_resumes
+        description: Merchant call resumes after clarification answer.
+        must_pass: true
+      - id: no_callback_queued
+        description: No callback is queued when the user answers in time.
+        must_pass: true
+    seeds:
+      - id: direct
+        merchant_style: direct
+        merchant_turns:
+          - "包间没有了，大厅可以吗？"
+          - "好的，那我继续安排。"
+      - id: impatient
+        merchant_style: impatient
+        merchant_turns:
+          - "这个问题必须现在确认。"
+          - "我最多再等一下。"
+      - id: follow_up
+        merchant_style: follow_up
+        merchant_turns:
+          - "大厅可以，我还想确认是否需要儿童椅。"
+          - "收到。"
+
+  - id: clarification_timeout_callback
+    gate: ci
+    behavior: clarification timeout to callback
+    task: User misses the clarification countdown and the session queues a callback.
+    user_lang: zh
+    merchant_lang: zh
+    checks:
+      - id: timeout_detected
+        description: Clarification timeout is recorded.
+        must_pass: true
+      - id: callback_queued
+        description: A callback entry is queued for post-call review.
+        must_pass: true
+      - id: review_phase_entered
+        description: Session transitions to post_call_review.
+        must_pass: true
+      - id: assumption_visible
+        description: The uncertain assumption is included in evidence.
+        must_pass: true
+    seeds:
+      - id: direct
+        merchant_style: direct
+        merchant_turns:
+          - "如果不能确认，我只能先挂断。"
+          - "请稍后再联系。"
+      - id: impatient
+        merchant_style: impatient
+        merchant_turns:
+          - "等太久了，我这边很忙。"
+          - "下次再打吧。"
+      - id: follow_up
+        merchant_style: follow_up
+        merchant_turns:
+          - "没关系，可以稍后回拨确认。"
+          - "我先记录一个临时备注。"
+
+  - id: merchant_impatience_escalation
+    gate: ci
+    behavior: merchant impatience escalation
+    task: Merchant interrupts repeatedly during clarification hold.
+    user_lang: zh
+    merchant_lang: zh
+    checks:
+      - id: filler_emitted
+        description: Holding filler is emitted before pausing.
+        must_pass: true
+      - id: reactive_cap_enforced
+        description: Reactive holding filler is capped at two triggers.
+        must_pass: true
+      - id: escalation_triggered
+        description: Third interruption escalates to callback path.
+        must_pass: true
+      - id: segment_interrupted
+        description: Current call segment is marked interrupted.
+        must_pass: true
+    seeds:
+      - id: direct
+        merchant_style: direct
+        merchant_turns:
+          - "你还在吗？"
+          - "请快点确认。"
+      - id: impatient
+        merchant_style: impatient
+        merchant_turns:
+          - "不要一直让我等。"
+          - "再不回答我就挂了。"
+      - id: follow_up
+        merchant_style: follow_up
+        merchant_turns:
+          - "需要我重复问题吗？"
+          - "可以稍后再来电。"
+
+  - id: auto_on_demand_translation
+    gate: ci
+    behavior: auto plus on-demand translation
+    task: English user needs translated Chinese merchant transcript lines.
+    user_lang: en
+    merchant_lang: zh
+    checks:
+      - id: auto_translation_child
+        description: Merchant line gets an automatic translation child frame.
+        must_pass: true
+      - id: parent_id_linked
+        description: Translation parent_id links to the original merchant transcript.
+        must_pass: true
+      - id: on_demand_translation
+        description: On-demand translation uses the same transcript_update shape.
+        must_pass: true
+      - id: original_preserved
+        description: Original merchant text remains unchanged.
+        must_pass: true
+    seeds:
+      - id: direct
+        merchant_style: direct
+        merchant_turns:
+          - "我们今晚七点还有位置。"
+          - "请确认手机号。"
+      - id: impatient
+        merchant_style: impatient
+        merchant_turns:
+          - "我需要马上知道人数。"
+          - "不确认就无法保留。"
+      - id: follow_up
+        merchant_style: follow_up
+        merchant_turns:
+          - "可以安排靠窗，但需要早到。"
+          - "是否需要停车信息？"
+
+  - id: user_takeover_relay
+    gate: ci
+    behavior: user takeover relay
+    task: User types in English during a Chinese merchant call and the relay speaks Chinese.
+    user_lang: en
+    merchant_lang: zh
+    checks:
+      - id: takeover_mode_entered
+        description: User takeover mode is acknowledged.
+        must_pass: true
+      - id: relay_translation_emitted
+        description: User text is translated before merchant TTS.
+        must_pass: true
+      - id: passthrough_parent_linked
+        description: Translation frame links to the user passthrough parent.
+        must_pass: true
+      - id: takeover_mode_exits
+        description: Call listening resumes after takeover.
+        must_pass: true
+    seeds:
+      - id: direct
+        merchant_style: direct
+        merchant_turns:
+          - "请客人自己确认一下。"
+          - "好的，我听到了。"
+      - id: impatient
+        merchant_style: impatient
+        merchant_turns:
+          - "让客人直接说吧。"
+          - "请不要重复太多次。"
+      - id: follow_up
+        merchant_style: follow_up
+        merchant_turns:
+          - "我想确认一下是否需要发票。"
+          - "收到，谢谢。"
+
+  - id: websocket_reconnect_post_call_review
+    gate: ci
+    behavior: WebSocket reconnect to post-call review
+    task: Browser reconnects after an interrupted in-call session.
+    user_lang: zh
+    merchant_lang: zh
+    checks:
+      - id: reconnect_detected
+        description: Reconnect is detected and surfaced to the client.
+        must_pass: true
+      - id: state_survives
+        description: TaskState remains available after reconnect.
+        must_pass: true
+      - id: review_phase_restored
+        description: Session restores to post_call_review when appropriate.
+        must_pass: true
+      - id: assumptions_callbacks_preserved
+        description: Assumptions and callbacks remain reviewable.
+        must_pass: true
+    seeds:
+      - id: direct
+        merchant_style: direct
+        merchant_turns:
+          - "如果断线，请稍后回拨。"
+          - "我会等确认结果。"
+      - id: impatient
+        merchant_style: impatient
+        merchant_turns:
+          - "断线的话这单就先不保留。"
+          - "请尽快恢复。"
+      - id: follow_up
+        merchant_style: follow_up
+        merchant_turns:
+          - "没关系，可以重新连上后继续。"
+          - "我先保留备注。"
+
+  - id: release_audio_zh_bridge
+    gate: release_audio
+    behavior: zh release audio bridge
+    # task is a plausible Chinese phone task so task_planner returns a real
+    # schema instead of task_category=refused; the scripted merchant_turns
+    # below carry the actual release-audio assertions.
+    task: 打电话给附近的眼镜店，问明天下午是否可以预约视力检查，并询问需要带的证件。
+    user_lang: zh
+    merchant_lang: zh
+    checks:
+      - id: browser_mic_captures
+        description: Browser microphone captures routed merchant audio.
+        must_pass: true
+      - id: backend_stt_final
+        description: Backend STT emits a final merchant transcript.
+        must_pass: true
+      - id: backend_tts_ai_to_merchant
+        description: Backend TTS emits ai_to_merchant audio.
+        must_pass: true
+      - id: browser_speaker_observed
+        description: BrowserAudioBridge speaker playback is observed.
+        must_pass: true
+    seeds:
+      - id: direct
+        merchant_style: direct
+        merchant_turns:
+          - "你好，请问需要办理什么业务？"
+          - "好的，我来确认信息。"
+      - id: impatient
+        merchant_style: impatient
+        merchant_turns:
+          - "请说快一点，我这边排队。"
+          - "还需要什么信息？"
+      - id: follow_up
+        merchant_style: follow_up
+        merchant_turns:
+          - "我可以帮你查，但需要一个编号。"
+          - "请再确认一次联系方式。"
+
+  - id: release_audio_en_bridge
+    gate: release_audio
+    behavior: en release audio bridge
+    # task is a plausible English phone task so task_planner returns a real
+    # schema instead of task_category=refused; the scripted merchant_turns
+    # below carry the actual release-audio assertions.
+    task: Call the bookstore to ask if they have a copy of Project Hail Mary by Andy Weir in stock and what the price is.
+    user_lang: en
+    merchant_lang: en
+    checks:
+      - id: browser_mic_captures
+        description: Browser microphone captures routed merchant audio.
+        must_pass: true
+      - id: backend_stt_final
+        description: Backend STT emits a final merchant transcript.
+        must_pass: true
+      - id: backend_tts_ai_to_merchant
+        description: Backend TTS emits ai_to_merchant audio.
+        must_pass: true
+      - id: browser_speaker_observed
+        description: BrowserAudioBridge speaker playback is observed.
+        must_pass: true
+    seeds:
+      - id: direct
+        merchant_style: direct
+        merchant_turns:
+          - "Hello, what can I help you with today?"
+          - "I can confirm that request."
+      - id: impatient
+        merchant_style: impatient
+        merchant_turns:
+          - "I need the details quickly."
+          - "Please confirm the account number."
+      - id: follow_up
+        merchant_style: follow_up
+        merchant_turns:
+          - "I can check, but I need one more detail."
+          - "Would you like a callback confirmation?"
+
+# ---------------------------------------------------------------------------
+# Phase 4 D-02 axis coverage (new non-restaurant scenarios — TASK-03)
+#
+# The following three scenarios satisfy the four-axis diversity constraint
+# across the UNION of new + existing scenarios:
+#
+#   intent_type (≥3 of 4 required):
+#     - query      → balance_inquiry_en_query, status_check_en_requires_repeated_confirmation
+#     - change     → appointment_change_zh_mildly_impatient
+#     - appointment→ covered by EXISTING preflight_supplement (restaurant reservation)
+#     - complaint  → intentionally deferred to v1.x backlog (3 of 4 ✓ per D-02)
+#
+#   info_depth (all 3 required):
+#     - zero_slot             → balance_inquiry_en_query ✓
+#     - multi_slot            → appointment_change_zh_mildly_impatient ✓
+#     - has_uncertain_assumption → status_check_en_requires_repeated_confirmation ✓
+#
+#   language (≥1 zh AND ≥1 en required):
+#     - zh → appointment_change_zh_mildly_impatient ✓
+#     - en → balance_inquiry_en_query, status_check_en_requires_repeated_confirmation ✓
+#
+#   merchant_reaction (all 3 required):
+#     - cooperative                  → balance_inquiry_en_query ✓
+#     - mildly_impatient             → appointment_change_zh_mildly_impatient ✓
+#     - requires_repeated_confirmation → status_check_en_requires_repeated_confirmation ✓
+#
+# Pitfall #8 compliance: every must_pass check references merchant-side
+# dialogue or backend-emitted evidence only. No check references
+# user_supplement, ack_clarification, mode_change, or any user-side frame.
+# ---------------------------------------------------------------------------
+
+  - id: balance_inquiry_en_query
+    gate: ci
+    behavior: balance inquiry (zero-slot query, cooperative merchant)
+    task: Call the bank and ask the current balance on the user's checking account.
+    user_lang: en
+    merchant_lang: en
+    diversity_axes:
+      intent_type: query
+      info_depth: zero_slot
+      merchant_reaction: cooperative
+    checks:
+      - id: schema_zero_slot
+        description: Task planner generates a schema with no required user slots.
+        must_pass: true
+      - id: merchant_dialogue_complete
+        description: Merchant agent asks identity verification, AI provides default-confirm path.
+        must_pass: true
+      - id: result_extracted
+        description: Final balance figure is captured in completion summary.
+        must_pass: true
+      - id: post_call_review_entered
+        description: Session transitions to post_call_review after merchant confirms balance.
+        must_pass: true
+    seeds:
+      - id: direct
+        merchant_style: direct
+        merchant_turns:
+          - "Thanks for calling. May I have your account number?"
+          - "Your balance is $1,247.33. Anything else?"
+      - id: impatient
+        merchant_style: impatient
+        merchant_turns:
+          - "I need the account number now."
+          - "Balance is $1,247.33."
+      - id: follow_up
+        merchant_style: follow_up
+        merchant_turns:
+          - "I can read the balance after I verify identity."
+          - "Confirmed. $1,247.33. Do you want recent transactions?"
+
+  - id: appointment_change_zh_mildly_impatient
+    gate: ci
+    behavior: reschedule existing appointment (multi-slot, mildly impatient)
+    task: Call the clinic to reschedule the user's Friday 3pm dental cleaning to next Tuesday afternoon.
+    user_lang: zh
+    merchant_lang: zh
+    diversity_axes:
+      intent_type: change
+      info_depth: multi_slot
+      merchant_reaction: mildly_impatient
+    checks:
+      - id: schema_multi_slot
+        description: Schema requires {existing_appt_time, new_target_window, patient_name}.
+        must_pass: true
+      - id: preflight_collects_all_slots
+        description: All required slots are collected during preflight.
+        must_pass: true
+      - id: reschedule_confirmed
+        description: Merchant confirms the new appointment time on the call.
+        must_pass: true
+      - id: post_call_review_entered
+        description: Session transitions to post_call_review after reschedule is confirmed.
+        must_pass: true
+    seeds:
+      - id: direct
+        merchant_style: direct
+        merchant_turns:
+          - "好的，请提供原预约时间和姓名。"
+          - "下周二下午有 2 点和 4 点，确认哪个？"
+      - id: impatient
+        merchant_style: impatient
+        merchant_turns:
+          - "麻烦说重点，是要改时间还是取消？"
+          - "下周二 2 点。要不要？"
+      - id: follow_up
+        merchant_style: follow_up
+        merchant_turns:
+          - "我先帮你查档案。是上次的洁牙吗？"
+          - "下周二 4 点可以，那我帮你改了。"
+
+  - id: status_check_en_requires_repeated_confirmation
+    gate: ci
+    behavior: package delivery status check (uncertain assumption surfaces in post-call review)
+    task: Call the courier and check delivery status for tracking number TRK-7XK2-2026.
+    user_lang: en
+    merchant_lang: en
+    diversity_axes:
+      intent_type: query
+      info_depth: has_uncertain_assumption
+      merchant_reaction: requires_repeated_confirmation
+    checks:
+      - id: tracking_number_relayed
+        description: Tracking number reaches merchant verbatim.
+        must_pass: true
+      - id: repeated_confirmation_handled
+        description: Merchant asks user to repeat the tracking number; AI re-reads without escalation.
+        must_pass: true
+      - id: uncertain_assumption_surfaces
+        description: An uncertain assumption (e.g., "merchant said 'will deliver today' — confirm later") appears in post_call_review.
+        must_pass: true
+      - id: post_call_review_entered
+        description: Session transitions to post_call_review after merchant provides delivery status.
+        must_pass: true
+    seeds:
+      - id: direct
+        merchant_style: direct
+        merchant_turns:
+          - "Could you read that tracking number again? T-R-K..."
+          - "Got it. It's out for delivery today."
+      - id: impatient
+        merchant_style: impatient
+        merchant_turns:
+          - "One more time. I didn't catch the last digits."
+          - "Fine — should arrive by end of day."
+      - id: follow_up
+        merchant_style: follow_up
+        merchant_turns:
+          - "Let me also verify the destination zip."
+          - "Yes, out for delivery. You should see it before 6 PM."
