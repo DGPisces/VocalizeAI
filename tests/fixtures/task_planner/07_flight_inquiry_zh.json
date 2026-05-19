@@ -1,0 +1,6 @@
+{
+  "user_task": "帮我查一下从北京飞上海的航班，要5月15号的，经济舱",
+  "expected_category": "flight-inquiry",
+  "min_h_slots": 4,
+  "should_refuse": false
+}

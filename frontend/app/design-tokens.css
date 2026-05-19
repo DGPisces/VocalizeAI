@@ -1,0 +1,176 @@
+/*
+ * shared design system — token primitives (web platform).
+ *
+ * Source: ~/Claude Code/Web Dev/design-system/platforms/web/_tokens.css
+ * (mirror of tokens/tokens.json v1.3.0). Vendored here because the design
+ * system is not yet published as an npm artifact; copying only the token
+ * layer keeps globals.css authoritative for component styles and avoids
+ * dragging in 700+ lines of upstream component CSS.
+ *
+ * Update protocol: re-vendor from upstream when tokens.json bumps; never
+ * hand-edit values here. Keep variable names identical to upstream.
+ */
+
+:root[data-theme="light"], :root {
+  color-scheme: light;
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface-2: #f2f2f7;
+  --text: #1d1d1f;
+  --text-soft: #5e5e63;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-solid: rgba(0, 0, 0, 0.14);
+  --card-border: rgba(0, 0, 0, 0.08);
+  --nav-bg: rgba(255, 255, 255, 0.85);
+  --accent: #007aff;
+  --accent-soft: rgba(0, 122, 255, 0.10);
+  --accent-text: #0058cc;
+  --good: #34c759;
+  --good-text: #1f7a33;
+  --good-soft: rgba(52, 199, 89, 0.10);
+  --warn: #ff9500;
+  --warn-text: #a65a00;
+  --warn-soft: rgba(255, 149, 0, 0.10);
+  --bad: #ff3b30;
+  --bad-soft: rgba(255, 59, 48, 0.10);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+  --font-sans: "SF Pro SC", "SF Pro Display", "SF Pro Text", "PingFang SC",
+    -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Microsoft YaHei",
+    "微软雅黑", sans-serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, Monaco, Consolas,
+    "Cascadia Code", "Roboto Mono", monospace;
+  --t-instant: 0.1s;
+  --t-fast: 0.15s;
+  --t-base: 0.2s;
+  --t-slow: 0.3s;
+  --t-slower: 0.5s;
+  --t-press-soft-in: 0.1s;
+  --t-press-soft-out: 0.25s;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-bounce: cubic-bezier(0.5, 1.5, 0.5, 1);
+  --fs-caption: 11px;
+  --fs-meta: 12px;
+  --fs-body: 13px;
+  --fs-strong: 14px;
+  --fs-h3: 16px;
+  --fs-h2: 22px;
+  --fs-h1: 24px;
+  --fs-display: 34px;
+  --fs-display-lg: 38px;
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 6px 24px rgba(0, 0, 0, 0.14);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.22);
+  --shadow-xl: 0 24px 56px rgba(0, 0, 0, 0.30);
+  --shadow-focus: 0 0 0 3px rgba(0, 122, 255, 0.20);
+  --z-base: 1;
+  --z-nav: 100;
+  --z-modal: 200;
+  --z-toast: 1000;
+  --z-overlay: 9999;
+  --bp-sm: 480px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1440px;
+  --content-pad-x: clamp(16px, 4vw, 28px);
+  --content-pad-y: clamp(20px, 4vw, 32px);
+  --chart-1: #007aff;
+  --chart-2: #34c759;
+  --chart-3: #ff9500;
+  --chart-4: #af52de;
+  --chart-5: #5ac8fa;
+  --chart-6: #ff3b30;
+  --chart-7: #ff2d55;
+  --chart-8: #8e8e93;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --text: #f5f5f7;
+  --text-soft: #98989d;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-solid: rgba(255, 255, 255, 0.16);
+  --card-border: rgba(255, 255, 255, 0.06);
+  --nav-bg: rgba(0, 0, 0, 0.85);
+  --accent: #007aff;
+  --accent-soft: rgba(0, 122, 255, 0.18);
+  --accent-text: #409cff;
+  --good: #32d74b;
+  --good-text: #3ccf5c;
+  --good-soft: rgba(50, 215, 75, 0.16);
+  --warn: #ff9f0a;
+  --warn-text: #ffb147;
+  --warn-soft: rgba(255, 159, 10, 0.16);
+  --bad: #ff453a;
+  --bad-soft: rgba(255, 69, 58, 0.18);
+  --shadow-sm: 0 1px 4px rgba(255, 255, 255, 0.06);
+  --shadow: 0 0 0 rgba(255, 255, 255, 0);
+  --shadow-md: 0 6px 24px rgba(255, 255, 255, 0.14);
+  --shadow-lg: 0 4px 8px rgba(255, 255, 255, 0.22);
+  --shadow-xl: 0 24px 56px rgba(255, 255, 255, 0.30);
+  --shadow-focus: 0 0 0 3px rgba(0, 122, 255, 0.30);
+  --chart-1: #0a84ff;
+  --chart-2: #30d158;
+  --chart-3: #ff9f0a;
+  --chart-4: #bf5af2;
+  --chart-5: #64d2ff;
+  --chart-6: #ff453a;
+  --chart-7: #ff375f;
+  --chart-8: #98989d;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    color-scheme: dark;
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --surface-2: #2c2c2e;
+    --text: #f5f5f7;
+    --text-soft: #98989d;
+    --border: rgba(255, 255, 255, 0.10);
+    --border-solid: rgba(255, 255, 255, 0.16);
+    --card-border: rgba(255, 255, 255, 0.06);
+    --nav-bg: rgba(0, 0, 0, 0.85);
+    --accent-soft: rgba(0, 122, 255, 0.18);
+    --accent-text: #409cff;
+    --good: #32d74b;
+    --good-text: #3ccf5c;
+    --good-soft: rgba(50, 215, 75, 0.16);
+    --warn: #ff9f0a;
+    --warn-text: #ffb147;
+    --warn-soft: rgba(255, 159, 10, 0.16);
+    --bad: #ff453a;
+    --bad-soft: rgba(255, 69, 58, 0.18);
+    --shadow-sm: 0 1px 4px rgba(255, 255, 255, 0.06);
+    --shadow: 0 0 0 rgba(255, 255, 255, 0);
+    --shadow-md: 0 6px 24px rgba(255, 255, 255, 0.14);
+    --shadow-lg: 0 4px 8px rgba(255, 255, 255, 0.22);
+    --shadow-xl: 0 24px 56px rgba(255, 255, 255, 0.30);
+    --shadow-focus: 0 0 0 3px rgba(0, 122, 255, 0.30);
+    --chart-1: #0a84ff;
+    --chart-2: #30d158;
+    --chart-3: #ff9f0a;
+    --chart-4: #bf5af2;
+    --chart-5: #64d2ff;
+    --chart-6: #ff453a;
+    --chart-7: #ff375f;
+    --chart-8: #98989d;
+  }
+}

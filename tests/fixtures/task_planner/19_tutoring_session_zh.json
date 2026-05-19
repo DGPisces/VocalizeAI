@@ -1,0 +1,6 @@
+{
+  "user_task": "帮我找一个高中数学家教，辅导我女儿高二数学，每周三晚上上课",
+  "expected_category": "tutoring-session",
+  "min_h_slots": 4,
+  "should_refuse": false
+}

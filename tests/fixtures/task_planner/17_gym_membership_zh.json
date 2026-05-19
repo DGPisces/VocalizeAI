@@ -1,0 +1,6 @@
+{
+  "user_task": "我想办一张乐刻健身的年卡，问问有没有学生优惠",
+  "expected_category": "gym-membership",
+  "min_h_slots": 3,
+  "should_refuse": false
+}

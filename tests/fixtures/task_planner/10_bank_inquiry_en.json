@@ -1,0 +1,6 @@
+{
+  "user_task": "I want to open a new savings account and transfer $5000 from my checking account",
+  "expected_category": "bank-inquiry",
+  "min_h_slots": 3,
+  "should_refuse": false
+}

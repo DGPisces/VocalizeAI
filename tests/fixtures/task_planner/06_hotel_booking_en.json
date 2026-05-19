@@ -1,0 +1,6 @@
+{
+  "user_task": "Book a double room at the Hilton near the airport for check-in May 20th, two nights",
+  "expected_category": "hotel-booking",
+  "min_h_slots": 4,
+  "should_refuse": false
+}

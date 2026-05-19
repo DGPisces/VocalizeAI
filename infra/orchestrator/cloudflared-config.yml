@@ -1,0 +1,22 @@
+# Reference only — DO NOT deploy this file to /etc/cloudflared/.
+#
+# Hosts run cloudflared via token-based service install:
+#   sudo cloudflared service install <TUNNEL_TOKEN>
+# That command embeds the tunnel id, credentials, and ingress config pulled from
+# the Cloudflare dashboard. No on-disk config.yml is required for runtime.
+#
+# This file documents the intended ingress shape so reviewers can see what the
+# tunnel exposes; the actual ingress lives in the Cloudflare dashboard
+# (Zero Trust → Networks → Tunnels → your-tunnel-name → Public Hostname) /
+# Cloudflare API tunnel config. The dashboard / API is the source of truth —
+# update this YAML whenever the live ingress changes so reviewers of the OSS
+# mirror see the current shape.
+#
+# Tunnel: your-tunnel-name (<TUNNEL_ID_PLACEHOLDER; configured via cloudflared service install token>)
+
+ingress:
+  - hostname: api.example.com
+    service: http://localhost:8080
+  - hostname: vocalize.example.com
+    service: http://localhost:3000
+  - service: http_status:404

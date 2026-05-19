@@ -1,0 +1,6 @@
+{
+  "user_task": "Order a large pepperoni pizza and garlic bread for delivery to 123 Main Street",
+  "expected_category": "delivery-order",
+  "min_h_slots": 4,
+  "should_refuse": false
+}

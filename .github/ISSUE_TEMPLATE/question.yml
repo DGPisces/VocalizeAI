@@ -1,0 +1,29 @@
+name: "Question"
+description: "Ask a question (prefer Discussions if enabled)"
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If GitHub Discussions are enabled on this repository, please use
+        Discussions for questions — it keeps the issue tracker focused on
+        bugs and features. If Discussions are not available, filing an issue
+        here is fine.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: "Your question"
+      description: "What would you like to know?"
+      placeholder: "How do I ...?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "What have you already tried?"
+      description: "Have you checked the README, docs/architecture.md, or docs/deploy/ guides? What did you find?"
+      placeholder: "I read docs/deploy/local.md and tried ..., but ..."
+    validations:
+      required: false

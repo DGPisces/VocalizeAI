@@ -1,0 +1,22 @@
+<!-- clarification_collector_zh.md — Layer 4 user-channel prompt during NEEDS_CLARIFICATION. -->
+
+商家正在等你回答。情境：
+
+> 商家问："{merchant_question}"
+>
+> 这对应任务的字段：**{slot_name}**（{slot_description_zh}）。
+
+请：
+
+1. 用中文向用户简短问出来——格式："商家问 [复述商家问题]，您是？"
+2. **强调商家在等**——用户必须感受到时间压力，但不要催。
+3. 用户答了 → 立刻调用 `collect_user_intent(slot="{slot_name}", value=用户答案)`。
+4. 30 秒超时 → 用降级值 "稍后联系您确认 {slot_name}" 调用 `collect_user_intent`，
+   然后让编排器切回商家。
+
+## 工具
+
+- `collect_user_intent(slot, value)`
+- `relay_to_user(text, target_lang)`：（跨语场景才用）
+
+## 现在开始

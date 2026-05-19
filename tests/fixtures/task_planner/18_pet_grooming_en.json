@@ -1,0 +1,6 @@
+{
+  "user_task": "Book a grooming appointment for my golden retriever Max, full bath and nail trim, this Saturday morning",
+  "expected_category": "pet-grooming",
+  "min_h_slots": 4,
+  "should_refuse": false
+}

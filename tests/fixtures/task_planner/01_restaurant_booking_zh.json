@@ -1,0 +1,6 @@
+{
+  "user_task": "帮我订海底捞火锅，明天晚上7点，三个人",
+  "expected_category": "restaurant-booking",
+  "min_h_slots": 4,
+  "should_refuse": false
+}

@@ -1,0 +1,37 @@
+__pycache__/
+*.pyc
+logs/*.log
+logs/*.txt
+*.egg-info/
+.venv*/
+build/
+dist/
+node_modules/
+.next/
+test-results/
+tests/integration/evidence/
+docs/release/24h-stability-evidence-runs/
+*.tsbuildinfo
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# Claude Code 本地 state（slash command 锁文件等）
+.claude/
+
+# Superpowers visual companion / local brainstorming state
+.superpowers/
+
+# GSD planning workspace (private to local clone; never committed)
+.planning/
+
+# REPL / IDE / OS 噪声
+.Rhistory
+.Rapp.history
+.DS_Store
+*.swp

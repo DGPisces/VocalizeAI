@@ -1,0 +1,6 @@
+{
+  "user_task": "我要投诉我在京东买的手机屏幕有坏点，要求退货退款",
+  "expected_category": "complaint",
+  "min_h_slots": 3,
+  "should_refuse": false
+}
