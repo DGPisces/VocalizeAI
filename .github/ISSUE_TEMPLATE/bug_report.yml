@@ -49,10 +49,10 @@ body:
       label: "Environment"
       description: "Your setup details."
       placeholder: |
-        - OS: macOS 15 / Ubuntu 24.04 / Raspberry Pi OS
+        - OS: macOS 15 / Ubuntu 24.04 / Debian 12 / Raspberry Pi OS
         - Python version: 3.11.x
         - Node version: 20.x
-        - Deployment mode: local dev / Pi production / other
+        - Deployment mode: local dev / Linux-host production / other
         - VocalizeAI version / commit hash:
     validations:
       required: true
@@ -61,7 +61,7 @@ body:
     id: logs
     attributes:
       label: "Relevant logs"
-      description: "Paste any relevant log output. Use `journalctl -u vocalize` on Pi, or the uvicorn terminal output locally."
+      description: "Paste any relevant log output. Use `journalctl -u vocalize` on a systemd-installed host, or the uvicorn terminal output locally."
       render: shell
     validations:
       required: false

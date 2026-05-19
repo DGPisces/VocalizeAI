@@ -1,6 +1,6 @@
-# Reference only — DO NOT deploy this file to /etc/cloudflared/ on Pi.
+# Reference only — DO NOT deploy this file to /etc/cloudflared/.
 #
-# Pi runs cloudflared via token-based service install:
+# Hosts run cloudflared via token-based service install:
 #   sudo cloudflared service install <TUNNEL_TOKEN>
 # That command embeds the tunnel id, credentials, and ingress config pulled from
 # the Cloudflare dashboard. No on-disk config.yml is required for runtime.

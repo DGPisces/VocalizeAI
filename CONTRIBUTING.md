@@ -37,7 +37,7 @@ cd frontend && npm run test:integration
 ```
 
 Note: `tests/integration/` release-audio cases require a physical audio setup
-(microphone + speaker) and a live Pi orchestrator. These are gated behind
+(microphone + speaker) and a live Linux-host orchestrator. These are gated behind
 `--release-audio` and do not run in PR CI.
 
 All checks must pass on your PR before merge. CI runs lint (ruff + mypy + tsc),

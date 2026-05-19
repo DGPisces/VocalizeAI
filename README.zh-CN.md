@@ -85,12 +85,12 @@ VocalizeAI/
 │   ├── messages/              # next-intl zh/en bundles
 │   └── tests/                 # vitest unit tests
 ├── demos/                     # runnable demos
-├── infra/                     # deployment scripts (GPU node, Pi orchestrator)
+├── infra/                     # 部署脚本(GPU 节点、Linux 编排器)
 ├── tests/                     # pytest suite
 │   └── integration/           # Playwright laptop-loopback + AI-merchant harness
 ├── install/                   # 一键安装脚本
 │   ├── dev-install.sh         # Mac/Linux 本地开发环境安装
-│   └── pi-install.sh          # 树莓派生产部署安装
+│   └── install.sh             # Linux 生产部署安装(树莓派是一种受支持的目标)
 ├── docs/                      # 架构文档、部署指南、发布记录
 ├── scripts/                   # smoke 测试和工具脚本
 │   └── smoke.sh               # 安装后端到端验证脚本
@@ -110,13 +110,13 @@ VocalizeAI/
 
 完整环境变量清单（含 LLM、GPU 服务、前端构建变量）见 `.env.example`。
 
-完整的树莓派生产部署手册，见 [docs/deploy/pi.md](docs/deploy/pi.md)。
+完整的树莓派生产部署手册，见 [docs/deploy/linux.md](docs/deploy/linux.md)。
 
 ### GPU 节点要求
 
 SenseVoice（STT）和 CosyVoice（TTS）作为独立 GPU 服务运行，通过 Tailscale
 与树莓派编排器连接。本地开发不需要 GPU（只需 LLM 路径即可运行）。GPU 节点配置见
-[docs/deploy/pi.md](docs/deploy/pi.md)。
+[docs/deploy/linux.md](docs/deploy/linux.md)。
 
 ## 跑开发服务器
 

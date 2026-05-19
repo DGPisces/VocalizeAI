@@ -6,10 +6,10 @@ IFS=$'\n\t'
 # VocalizeAI Pi installer
 #
 # Deploys the VocalizeAI orchestrator on a Raspberry Pi.
-# Wraps the existing infra/pi-orchestrator/ assets.
+# Wraps the existing infra/orchestrator/ assets.
 #
 # Usage:
-#   bash install/pi-install.sh [--dry-run] [--steps "1,3,5"] [--skip-tunnel] [--skip-gpu]
+#   bash install/install.sh [--dry-run] [--steps "1,3,5"] [--skip-tunnel] [--skip-gpu]
 #
 # Flags:
 #   --dry-run       Print planned actions without performing any mutations.
@@ -53,7 +53,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Unknown flag: $1"
-            echo "Usage: bash install/pi-install.sh [--dry-run] [--steps '1,3,5'] [--skip-tunnel] [--skip-gpu]"
+            echo "Usage: bash install/install.sh [--dry-run] [--steps '1,3,5'] [--skip-tunnel] [--skip-gpu]"
             exit 1
             ;;
     esac
@@ -128,7 +128,7 @@ step3_gpu_services() {
     echo "[3/7] GPU services setup..."
     echo "  GPU services (SenseVoice STT + CosyVoice TTS) run on a separate host."
     echo "  Ensure GPU_HOST in /opt/vocalize/.env points to that host's Tailscale IP."
-    echo "  This installer does not configure the GPU host — see docs/deploy/pi.md for details."
+    echo "  This installer does not configure the GPU host — see docs/deploy/linux.md for details."
     echo "[3/7] Done (note only — no mutation performed)."
 }
 
@@ -147,7 +147,7 @@ step4_tailscale_check() {
         else
             echo "  WARNING: Tailscale not found. Install it with:"
             echo "    curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up"
-            echo "  Tailscale is required for the Pi to reach the GPU host."
+            echo "  Tailscale is required for this host to reach the GPU host."
         fi
     fi
     echo "[4/7] Done."
@@ -167,7 +167,7 @@ step5_cloudflared_tunnel() {
     echo "    Zero Trust -> Networks -> Tunnels -> [your tunnel] -> Configure"
     echo "    -> Install and run a connector -> Copy the token"
     echo ""
-    echo "  Reference ingress shape (docs only): infra/pi-orchestrator/cloudflared-config.yml"
+    echo "  Reference ingress shape (docs only): infra/orchestrator/cloudflared-config.yml"
     echo "  (Actual ingress routing is configured in the Cloudflare dashboard, not in a file.)"
     if [ "$DRY_RUN" = true ]; then
         echo "[DRY] would run: sudo cloudflared service install <TUNNEL_TOKEN>  (requires manual token)"
@@ -183,9 +183,9 @@ step6_systemd_unit() {
     echo ""
     echo "[6/7] Installing systemd unit and environment file..."
 
-    SERVICE_SRC="${REPO_ROOT}/infra/pi-orchestrator/vocalize.service"
+    SERVICE_SRC="${REPO_ROOT}/infra/orchestrator/vocalize.service"
     SERVICE_DST="/etc/systemd/system/vocalize.service"
-    ENV_SRC="${REPO_ROOT}/infra/pi-orchestrator/.env.template"
+    ENV_SRC="${REPO_ROOT}/infra/orchestrator/.env.template"
     ENV_DST="${INSTALL_DIR}/.env"
 
     # Install vocalize.service
@@ -237,7 +237,7 @@ step7_start_and_smoke() {
 # Main dispatcher
 # ---------------------------------------------------------------------------
 
-echo "=== VocalizeAI Pi Installer ==="
+echo "=== VocalizeAI Linux Installer ==="
 if [ "$DRY_RUN" = true ]; then
     echo "(DRY RUN — no system changes will be made)"
 fi
@@ -272,7 +272,7 @@ for i in 1 2 3 4 5 6 7; do
 done
 
 echo ""
-echo "=== Pi install complete ==="
+echo "=== Install complete ==="
 echo "Steps run: ${STEPS_RUN[*]:-none}"
 if [ "$DRY_RUN" = true ]; then
     echo "(DRY RUN — re-run without --dry-run to apply changes)"

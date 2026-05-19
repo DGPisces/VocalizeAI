@@ -1,57 +1,62 @@
-# Deploying VocalizeAI on a Raspberry Pi
+# Deploying VocalizeAI on a Linux Host
 
-This runbook covers end-to-end production deployment of VocalizeAI on a
-Raspberry Pi: the orchestrator runs on the Pi; GPU services (SenseVoice STT +
-CosyVoice TTS) run on a separate machine reachable over Tailscale; a Cloudflare
-Tunnel fronts the Pi to the public internet.
+This runbook covers end-to-end production deployment of VocalizeAI on any
+modern Linux host with systemd: the orchestrator runs on this host, GPU
+services (SenseVoice STT + CosyVoice TTS) run on a separate machine reachable
+over Tailscale, and a Cloudflare Tunnel fronts the orchestrator host to the
+public internet.
+
+Tested on **Debian 12**, **Ubuntu 22.04 / 24.04**, and **Raspberry Pi OS
+(Bookworm)**. A Raspberry Pi was the original reference target — see
+["Hardware example: Raspberry Pi"](#hardware-example-raspberry-pi) below for
+the BOM, OS imaging, and SSH bootstrap steps for that specific target.
 
 ---
 
-## Hardware Bill of Materials
+## Bill of Materials
 
-**Raspberry Pi:**
-- Raspberry Pi 4 or Pi 5, **8 GB RAM recommended** (4 GB works for the orchestrator
-  alone but is tight if other services run alongside)
-- 32 GB+ microSD card or USB SSD (SSD strongly recommended for production)
-- Reliable internet connection (Cloudflare Tunnel requires outbound HTTPS)
+**Orchestrator host:**
+- Any 64-bit Linux box with systemd, ≥ 2 GB RAM, ≥ 16 GB free disk.
+- Python 3.11 (installed by step 1 of `install/install.sh`).
+- Persistent internet connection (Cloudflare Tunnel requires outbound HTTPS).
 
 **GPU node (separate machine):**
-- NVIDIA RTX-class GPU (GTX 1080 or better; RTX 30/40 series recommended)
-- Windows + WSL2 or Linux (PyTorch 2.7.1+cu128)
-- Reachable from the Pi over Tailscale on the configured `GPU_HOST` IP/hostname
+- NVIDIA RTX-class GPU (GTX 1080 or better; RTX 30/40 series recommended).
+- Windows + WSL2 or Linux (PyTorch 2.7.1+cu128).
+- Reachable from the orchestrator host over Tailscale on the configured
+  `GPU_HOST` IP/hostname.
 
 **Network:**
-- Tailscale account (free tier is sufficient) with both the Pi and GPU node enrolled
-- Cloudflare account with a domain pointed at Cloudflare DNS (free tier is sufficient)
+- Tailscale account (free tier is sufficient) with both the orchestrator host
+  and the GPU node enrolled.
+- Cloudflare account with a domain pointed at Cloudflare DNS (free tier is
+  sufficient).
 
 ---
 
 ## OS Preparation
 
 ```bash
-# Flash Raspberry Pi OS Lite (64-bit) to the SD card / SSD using Raspberry Pi Imager.
-# In Imager, pre-configure:
-#   - hostname
-#   - SSH enabled
-#   - SSH public key (paste your ~/.ssh/id_ed25519.pub or generate one first)
-#   - Wi-Fi credentials (if not using Ethernet)
-
-# After first boot, SSH in and update the system:
-ssh pi@<pi-hostname>
+# On the orchestrator host (any modern 64-bit Linux with systemd):
+ssh <user>@<host>
 sudo apt-get update && sudo apt-get upgrade -y
 
 # Ensure git and curl are present:
 sudo apt-get install -y git curl
 ```
 
+For the Raspberry Pi-specific imaging / first-boot steps, see
+["Hardware example: Raspberry Pi"](#hardware-example-raspberry-pi).
+
 ---
 
 ## Tailscale Setup
 
-Tailscale provides the encrypted overlay network between the Pi and the GPU node.
+Tailscale provides the encrypted overlay network between the orchestrator
+host and the GPU node.
 
 ```bash
-# Install Tailscale on the Pi:
+# Install Tailscale on the orchestrator host:
 curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up
 
@@ -66,7 +71,7 @@ tailscale status
 
 Set `GPU_HOST` in `/opt/vocalize/.env` to the GPU node's Tailscale IP.
 
-If the GPU services are not yet running, use `install/pi-install.sh --skip-gpu`
+If the GPU services are not yet running, use `install/install.sh --skip-gpu`
 to proceed with installation without the GPU-reachability check.
 
 ---
@@ -74,20 +79,20 @@ to proceed with installation without the GPU-reachability check.
 ## Clone and Install
 
 ```bash
-# Clone the repository to the Pi:
+# Clone the repository to the orchestrator host:
 git clone https://github.com/DGPisces/VocalizeAI.git /opt/vocalize
 cd /opt/vocalize
 
 # Dry-run first to preview all 7 steps:
-bash install/pi-install.sh --dry-run
+bash install/install.sh --dry-run
 
 # Run the full installer:
-bash install/pi-install.sh
+bash install/install.sh
 
 # Or run selectively:
-bash install/pi-install.sh --steps "1,2,6"   # apt + venv + systemd only
-bash install/pi-install.sh --skip-gpu         # skip GPU-reachability check in step 7
-bash install/pi-install.sh --skip-tunnel      # skip step 5 (Cloudflare Tunnel info)
+bash install/install.sh --steps "1,2,6"   # apt + venv + systemd only
+bash install/install.sh --skip-gpu         # skip GPU-reachability check in step 7
+bash install/install.sh --skip-tunnel      # skip step 5 (Cloudflare Tunnel info)
 ```
 
 **Installer steps:**
@@ -96,7 +101,7 @@ bash install/pi-install.sh --skip-tunnel      # skip step 5 (Cloudflare Tunnel i
 |------|--------|
 | 1 | `apt-get install` python3.11 python3.11-venv python3-pip build-essential rsync |
 | 2 | Create `.venv` in `/opt/vocalize`, `pip install -e .` |
-| 3 | GPU services note (GPU lives on a separate host; no on-Pi install) |
+| 3 | GPU services note (GPU lives on a separate host; no on-orchestrator install) |
 | 4 | Tailscale presence check (warns if absent) |
 | 5 | Cloudflare Tunnel token-install instructions |
 | 6 | Copy `vocalize.service` to `/etc/systemd/system/`, copy `.env.template` to `/opt/vocalize/.env` if absent, `systemctl enable vocalize` |
@@ -124,9 +129,9 @@ sudo nano /opt/vocalize/.env
 | `GPU_HOST` | yes (if using GPU) | STT/TTS host — Tailscale IP of your GPU node |
 | `SENSEVOICE_WS_PORT` | default ok | STT port; default `8000` |
 | `COSYVOICE_WS_PORT` | default ok | TTS port; default `8001` |
-| `VOCALIZE_HOST` | default ok | uvicorn bind host; set to `0.0.0.0` for Pi production |
+| `VOCALIZE_HOST` | default ok | uvicorn bind host; set to `0.0.0.0` for production |
 | `VOCALIZE_PORT` | default ok | uvicorn bind port; default `8080` |
-| `ORCHESTRATOR_LISTEN_PORT` | default ok | Pi service port; default `8080` (legacy compatibility) |
+| `ORCHESTRATOR_LISTEN_PORT` | default ok | Orchestrator service port; default `8080` (legacy compatibility) |
 | `VOCALIZE_WS_BASE_URL` | **yes** | Public WS base URL; e.g. `wss://api.<your-domain>` — startup raises if missing in non-localhost mode |
 | `VOCALIZE_CORS_ORIGINS` | default ok | Comma-separated allowed CORS origins; default auto-picked from VOCALIZE_HOST |
 | `DEFAULT_LANGUAGE` | default ok | `zh` or `en`; default `zh` |
@@ -153,7 +158,7 @@ VOCALIZE_CORS_ORIGINS=https://<your-domain>
 
 ## Cloudflare Tunnel
 
-The Cloudflare Tunnel connects the Pi to the public internet without exposing SSH
+The Cloudflare Tunnel connects the orchestrator host to the public internet without exposing SSH
 or opening firewall ports.
 
 **Token-based install (recommended):**
@@ -163,7 +168,7 @@ or opening firewall ports.
 # Zero Trust -> Networks -> Tunnels -> [your tunnel] -> Configure
 # -> "Install and run a connector" -> Copy the displayed token
 
-# Install the tunnel service on the Pi:
+# Install the tunnel service on the orchestrator host:
 sudo cloudflared service install <TUNNEL_TOKEN>
 
 # Verify the service is running:
@@ -171,7 +176,7 @@ sudo systemctl status cloudflared
 ```
 
 The reference ingress shape for this project is documented in
-`infra/pi-orchestrator/cloudflared-config.yml` (maps
+`infra/orchestrator/cloudflared-config.yml` (maps
 `vocalize-api.<your-tunnel-name>` → `http://localhost:8080` and
 `vocalize.<your-tunnel-name>` → `http://localhost:3000`). Configure
 the actual public hostname routing in the Cloudflare dashboard under
@@ -186,7 +191,7 @@ tunnel name; tunnels are account-specific.
 
 ### vocalize.service
 
-The `vocalize.service` unit file is at `infra/pi-orchestrator/vocalize.service`
+The `vocalize.service` unit file is at `infra/orchestrator/vocalize.service`
 and is copied to `/etc/systemd/system/vocalize.service` by step 6 of the installer.
 
 ```ini
@@ -240,7 +245,7 @@ sudo systemctl restart vocalize
 After the installer completes (step 7 runs this automatically), verify the deployment:
 
 ```bash
-# Smoke test against the Pi's local port:
+# Smoke test against the orchestrator's local port:
 VOCALIZE_API_BASE=http://127.0.0.1:8080 bash scripts/smoke.sh
 # Exit 0 = working deployment
 
@@ -251,7 +256,7 @@ VOCALIZE_API_BASE=https://api.<your-domain> bash scripts/smoke.sh
 The smoke script exercises 6 round-trips: `GET /health`, `POST /api/sessions`,
 `POST /api/sessions/{id}/task`, WS upgrade + send/recv, `DELETE /api/sessions/{id}`.
 
-Note: the local smoke on the Pi uses port 8080 (production port), not 8000 (dev
+Note: the local smoke uses port 8080 (production port), not 8000 (dev
 port). Make sure `VOCALIZE_API_BASE` is set accordingly.
 
 ---
@@ -311,3 +316,39 @@ Common causes:
 **Port conflicts:**
 - `VOCALIZE_PORT` defaults to 8080. If another service occupies that port, change
   `VOCALIZE_PORT` in `.env` and update the Cloudflare Tunnel ingress rule accordingly.
+
+---
+
+## Hardware example: Raspberry Pi
+
+The Raspberry Pi was the original reference target for this runbook. None of
+the steps above are Pi-specific; this section just captures the bits that
+differ when the orchestrator host happens to be a Pi.
+
+### BOM
+
+- Raspberry Pi 4 or Pi 5, **8 GB RAM recommended** (4 GB works for the
+  orchestrator alone but is tight if other services run alongside).
+- 32 GB+ microSD card or USB SSD (SSD strongly recommended for production).
+- Reliable internet connection (Cloudflare Tunnel requires outbound HTTPS).
+
+### Imaging and first boot
+
+```bash
+# Flash Raspberry Pi OS Lite (64-bit) to the SD card / SSD using Raspberry
+# Pi Imager. In Imager, pre-configure:
+#   - hostname
+#   - SSH enabled
+#   - SSH public key (paste your ~/.ssh/id_ed25519.pub or generate one first)
+#   - Wi-Fi credentials (if not using Ethernet)
+
+# After first boot, SSH in and update the system:
+ssh pi@<pi-hostname>
+sudo apt-get update && sudo apt-get upgrade -y
+
+# Ensure git and curl are present:
+sudo apt-get install -y git curl
+```
+
+From here on, the rest of this runbook (Tailscale, install, Cloudflare
+Tunnel, smoke) applies unchanged.

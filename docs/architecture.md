@@ -556,7 +556,7 @@ See: `src/vocalize/server/ws.py`, `frontend/lib/audio*`, `frontend/components/Br
 | Env/config loading | `src/vocalize/config.py` |
 | Asyncio main pipeline | `src/vocalize/pipeline.py` |
 | Frontend (Next.js 14) | `frontend/` |
-| Pi deployment assets | `infra/pi-orchestrator/` |
+| Pi deployment assets | `infra/orchestrator/` |
 | GPU services setup | `infra/gpu-services/` |
 | Backend tests (pytest) | `tests/` |
 | Integration tests (Playwright) | `tests/integration/` |
@@ -611,5 +611,5 @@ See: `src/vocalize/server/ws.py`, `src/vocalize/server/sessions.py`
 ## Further Reading
 
 - **[docs/deploy/local.md](docs/deploy/local.md)** — Mac/Linux dev environment setup and env-var reference
-- **[docs/deploy/pi.md](docs/deploy/pi.md)** — End-to-end Pi production deployment runbook
+- **[docs/deploy/linux.md](docs/deploy/linux.md)** — End-to-end Pi production deployment runbook
 - **[CONTRIBUTING.md](../CONTRIBUTING.md)** — Contributor flow, code style, commit conventions

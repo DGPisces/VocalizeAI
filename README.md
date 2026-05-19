@@ -10,8 +10,9 @@ across languages when needed.
 
 ## Current Status
 
-**v1 ships** the universal phone-task engine, Web console, and Raspberry Pi
-orchestrator deployment. The backend 5-layer prompt architecture
+**v1 ships** the universal phone-task engine, Web console, and a Linux-host
+orchestrator deployment (Raspberry Pi was the original reference target;
+any modern Linux host with systemd works). The backend 5-layer prompt architecture
 (task_planner / preflight / merchant_agent / clarification_collector / relay)
 handles any phone task — restaurant bookings, service appointments, balance
 inquiries, status checks, and more. An OSS mirror is available at
@@ -91,12 +92,12 @@ VocalizeAI/
 │   ├── messages/              # next-intl zh/en bundles
 │   └── tests/                 # vitest unit tests
 ├── demos/                     # runnable demos
-├── infra/                     # deployment scripts (GPU node, Pi orchestrator)
+├── infra/                     # deployment scripts (GPU node, Linux orchestrator)
 ├── tests/                     # pytest suite
 │   └── integration/           # Playwright laptop-loopback + AI-merchant harness
 ├── install/                   # one-shot install scripts
 │   ├── dev-install.sh         # Mac/Linux local dev setup
-│   └── pi-install.sh          # Raspberry Pi production deploy
+│   └── install.sh             # Linux production deploy (Raspberry Pi is one example target)
 ├── docs/                      # architecture, deploy guides, release evidence
 ├── scripts/                   # smoke test and utility scripts
 │   └── smoke.sh               # post-install end-to-end verification
@@ -117,13 +118,14 @@ VocalizeAI/
 See `.env.example` for the full env-var inventory including LLM, GPU service,
 and frontend build-time variables.
 
-For the full production Pi deployment runbook, see [docs/deploy/pi.md](docs/deploy/pi.md).
+For the full Linux-host production deployment runbook (Raspberry Pi is one
+example target), see [docs/deploy/linux.md](docs/deploy/linux.md).
 
 ### GPU node requirements
 
 SenseVoice (STT) and CosyVoice (TTS) run as separate GPU services and connect
-to the Pi orchestrator over Tailscale. GPU services are optional for local dev
-(the LLM path works without them). See [docs/deploy/pi.md](docs/deploy/pi.md)
+to the orchestrator host over Tailscale. GPU services are optional for local dev
+(the LLM path works without them). See [docs/deploy/linux.md](docs/deploy/linux.md)
 for the GPU node setup.
 
 ## Run the dev server

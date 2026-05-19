@@ -72,12 +72,12 @@ $EDITOR .env
 | `OPENAI_API_KEY` | **yes** | LLM authentication — any OpenAI-compatible provider (OpenAI, DeepSeek, Qwen, etc.) |
 | `OPENAI_BASE_URL` | default ok | LLM endpoint; default `https://api.deepseek.com/v1` |
 | `OPENAI_MODEL` | default ok | Model name; default `deepseek-chat` |
-| `GPU_HOST` | only if using GPU | STT/TTS host; use `localhost` for single-machine dev, Tailscale IP for Pi deployment |
+| `GPU_HOST` | only if using GPU | STT/TTS host; use `localhost` for single-machine dev, Tailscale IP for remote-GPU deployment (e.g. Raspberry Pi orchestrator → GPU node) |
 | `SENSEVOICE_WS_PORT` | default ok | SenseVoice STT WebSocket port; default `8000` |
 | `COSYVOICE_WS_PORT` | default ok | CosyVoice TTS WebSocket port; default `8001` |
 | `VOCALIZE_HOST` | default ok | uvicorn bind host; `127.0.0.1` for local dev, `0.0.0.0` for production |
 | `VOCALIZE_PORT` | default ok | uvicorn bind port; default `8080` (note: dev `main.py` defaults to 8000) |
-| `ORCHESTRATOR_LISTEN_PORT` | default ok | Pi service port; default `8080` (legacy; mirrors `VOCALIZE_PORT`) |
+| `ORCHESTRATOR_LISTEN_PORT` | default ok | Orchestrator service port; default `8080` (legacy; mirrors `VOCALIZE_PORT`) |
 | `VOCALIZE_WS_BASE_URL` | required when non-localhost | Public WS base URL (e.g. `wss://api.example.com`); startup raises if missing in non-localhost mode (D-11) |
 | `VOCALIZE_CORS_ORIGINS` | default ok | Comma-separated allowed CORS origins; auto-picked from VOCALIZE_HOST in dev mode |
 | `DEFAULT_LANGUAGE` | default ok | Session default language; `zh` or `en`; default `zh` |
@@ -178,7 +178,7 @@ cd frontend && npm run test:integration
 ```
 
 Note: `tests/integration/` release-audio cases require a physical audio setup
-(microphone + speaker) and a live Pi orchestrator. These are gated behind
+(microphone + speaker) and a live Linux-host orchestrator. These are gated behind
 `--release-audio` and do not run in PR CI. The standard integration test suite
 (`npm run test:integration`) runs the 8 text-bypass AI-merchant scenarios and
 does not require physical hardware.
