@@ -15,7 +15,7 @@ keeps the report private and tracked alongside the codebase.
 
 **Backup channel: email.** Until Private Vulnerability Reporting is enabled, or
 if you cannot use it, email
-[gaodingyun2@gmail.com](mailto:gaodingyun2@gmail.com) with subject prefix
+[40358663+DGPisces@users.noreply.github.com](mailto:40358663+DGPisces@users.noreply.github.com) with subject prefix
 `[VocalizeAI Security]`.
 
 Do **not** file a public GitHub issue for security topics. Disclosure

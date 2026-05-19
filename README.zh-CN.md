@@ -22,7 +22,7 @@ v1 采用共享邀请令牌机制：`POST /api/sessions` 须携带 `X-Invite-Tok
 并重新构建前端。每用户认证属于 v1.x 范畴（需求 AUTH-01）。
 
 持有令牌的人均可使用本服务。如需申请邀请令牌，请发邮件至
-[gaodingyun2@gmail.com](mailto:gaodingyun2@gmail.com)。
+[40358663+DGPisces@users.noreply.github.com](mailto:40358663+DGPisces@users.noreply.github.com)。
 
 ## 快速开始
 

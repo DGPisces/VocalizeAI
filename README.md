@@ -26,7 +26,7 @@ exists in v1; rotation requires a deploy-time env-var change plus frontend
 rebuild. Per-user authentication is v1.x scope (requirement AUTH-01).
 
 Anyone who holds the token can use the service. To request an invite token,
-email [gaodingyun2@gmail.com](mailto:gaodingyun2@gmail.com).
+email [40358663+DGPisces@users.noreply.github.com](mailto:40358663+DGPisces@users.noreply.github.com).
 
 ## Quick Start
 
