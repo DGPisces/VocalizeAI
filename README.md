@@ -194,8 +194,13 @@ follow code style, and submit contributions. Issue + PR templates live under `.g
 
 ## Security
 
-See [SECURITY.md](SECURITY.md) for the vulnerability reporting channel,
-threat model summary, and emergency rollback procedure.
+VocalizeAI is self-deploy: every operator runs their own backend on
+their own infrastructure, and there is no centrally hosted instance to
+defend. Report any security-relevant finding via GitHub Issues — same
+as any other bug — so every operator can pick up the fix. Self-deploy
+operators are responsible for restricting reachability at the network
+or proxy layer (Cloudflare Access, VPN, reverse-proxy auth, etc.).
+Per-user authentication is v1.x scope (requirement `AUTH-01`).
 
 ## License
 

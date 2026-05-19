@@ -5,9 +5,11 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for reporting a bug! Before submitting, please search existing
-        issues to avoid duplicates. For security vulnerabilities, see
-        [SECURITY.md](../../SECURITY.md) instead of filing a public issue.
+        Thank you for reporting a bug! Before submitting, please search
+        existing issues to avoid duplicates. VocalizeAI is a self-deploy
+        project — every operator runs their own backend on their own
+        infrastructure — so all reports (including security-relevant ones)
+        go through GitHub Issues here.
 
   - type: textarea
     id: what-happened

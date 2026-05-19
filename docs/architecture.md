@@ -376,8 +376,8 @@ See: `src/vocalize/server/frames.py`
 
 The REST API is mounted at `/api/sessions`. The backend ships no
 request-level authentication in v1; self-deploy operators restrict
-reachability at the network or proxy layer (per-user auth is v1.x scope —
-see SECURITY.md and requirement `AUTH-01`).
+reachability at the network or proxy layer (per-user auth is v1.x
+scope — requirement `AUTH-01`).
 
 See: `src/vocalize/server/sessions.py`, `src/vocalize/server/health.py`
 
@@ -566,8 +566,9 @@ See: `src/vocalize/server/ws.py`, `frontend/lib/audio*`, `frontend/components/Br
 ## Security Posture
 
 The security controls relevant to the architecture are documented here for
-API consumers and security researchers. For the full threat model and disclosure
-channel, see [SECURITY.md](../SECURITY.md).
+API consumers and security researchers. VocalizeAI is a self-deploy
+project (no centrally hosted instance); report security-relevant findings
+via GitHub Issues — same channel as any other bug.
 
 ### Authentication (D-08, retired)
 
@@ -612,4 +613,3 @@ See: `src/vocalize/server/ws.py`, `src/vocalize/server/sessions.py`
 - **[docs/deploy/local.md](docs/deploy/local.md)** — Mac/Linux dev environment setup and env-var reference
 - **[docs/deploy/pi.md](docs/deploy/pi.md)** — End-to-end Pi production deployment runbook
 - **[CONTRIBUTING.md](../CONTRIBUTING.md)** — Contributor flow, code style, commit conventions
-- **[SECURITY.md](../SECURITY.md)** — Vulnerability reporting, threat model, emergency rollback
