@@ -445,7 +445,10 @@ def test_user_takeover_text_reaches_runner_takeover_queue() -> None:
                 "mode": "user_takeover",
             }))
             _wait_until(lambda: bool(runner.takeover_inputs))
-            assert runner.takeover_inputs == [("yes", "en")]
+            assert len(runner.takeover_inputs) == 1
+            text, lang, passthrough_id = runner.takeover_inputs[0]
+            assert (text, lang) == ("yes", "en")
+            assert isinstance(passthrough_id, str) and passthrough_id
             assert runner.merchant_hints == []
 
 
