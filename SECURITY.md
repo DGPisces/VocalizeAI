@@ -8,19 +8,22 @@ shipped with the next release tag.
 
 ## Reporting a vulnerability
 
-**Primary channel: GitHub Private Vulnerability Reporting.** Once enabled on
-the public repository (post-Phase-9 setting), open a private security advisory
-at Security → Advisories → New draft advisory. This is the preferred route — it
-keeps the report private and tracked alongside the codebase.
+**Channel: GitHub Private Vulnerability Reporting.** Open a private security
+advisory at the repository's Security → Advisories → New draft advisory. This
+is the only private reporting channel and keeps the report tracked alongside
+the codebase.
 
-**Backup channel: email.** Until Private Vulnerability Reporting is enabled, or
-if you cannot use it, email
-[40358663+DGPisces@users.noreply.github.com](mailto:40358663+DGPisces@users.noreply.github.com) with subject prefix
-`[VocalizeAI Security]`.
+If GitHub Private Vulnerability Reporting is not yet enabled on the public
+repository, open a public GitHub issue titled exactly
+**"Private security contact request"** with no technical details; a
+maintainer will respond there with a private channel for follow-up. Do
+**not** include vulnerability details, repro steps, or impact information
+in that initial public issue.
 
-Do **not** file a public GitHub issue for security topics. Disclosure
-follows responsible-disclosure norms: a private 90-day window by default,
-with earlier coordinated release if an active exploit is confirmed.
+Do **not** file a public GitHub issue with the vulnerability details for any
+security topic. Disclosure follows responsible-disclosure norms: a private
+90-day window by default, with earlier coordinated release if an active
+exploit is confirmed.
 
 Please include:
 - Description of the vulnerability and affected component
