@@ -46,8 +46,8 @@ configured server-side. This is an intentional design for v1 (requirement
 
 ### Backend security controls
 
-- **CORS**: single allowed origin (`https://vocalize.dgpisces.com`) in
-  production; localhost origins preserved in dev mode via
+- **CORS**: single allowed origin (set via `VOCALIZE_CORS_ORIGINS`, e.g.
+  `https://vocalize.example.com`) in production; localhost origins preserved in dev mode via
   `VOCALIZE_HOST` env-conditional config. `allow_methods` restricted to
   `["GET", "POST", "DELETE"]`.
 - **WS base URL enforcement**: server raises at startup if

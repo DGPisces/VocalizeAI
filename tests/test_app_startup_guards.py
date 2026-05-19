@@ -71,7 +71,7 @@ def test_non_localhost_with_ws_base_url_succeeds(monkeypatch):
     client = _make_client(
         monkeypatch,
         host="0.0.0.0",
-        ws_base_url="wss://vocalize-api.dgpisces.com",
+        ws_base_url="wss://api.example.com",
     )
     # App started without RuntimeError; 404 here just means session not found.
     resp = client.get("/api/sessions/nonexistent-id")
@@ -159,7 +159,7 @@ def test_cors_wildcard_origins_raises_at_startup(monkeypatch):
 
 def test_cors_wildcard_mixed_with_real_origins_raises(monkeypatch):
     monkeypatch.setenv("VOCALIZE_HOST", "0.0.0.0")
-    monkeypatch.setenv("VOCALIZE_WS_BASE_URL", "wss://vocalize-api.dgpisces.com")
+    monkeypatch.setenv("VOCALIZE_WS_BASE_URL", "wss://api.example.com")
     monkeypatch.setenv("VOCALIZE_CORS_ORIGINS", "https://example.com,*")
     monkeypatch.delenv("VOCALIZE_INVITE_TOKEN", raising=False)
     reset_config()

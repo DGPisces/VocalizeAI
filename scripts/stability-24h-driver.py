@@ -7,14 +7,14 @@ NOT TestClient-based — see PATTERNS.md §scripts/stability-24h-driver.py.
 Usage (run from a remote runner host):
     ssh <your-runner-host>
     cd /path/to/VocalizeAI
-    export VOCALIZE_API_BASE=https://vocalize-api.dgpisces.com
+    export VOCALIZE_API_BASE=https://api.example.com
     export VOCALIZE_INVITE_TOKEN=<token>
     python scripts/stability-24h-driver.py --duration-minutes 1440 \\
         --scenario balance_inquiry_en_query --seed direct
 
 Environment variables:
     VOCALIZE_API_BASE     Base URL for the Pi orchestrator REST API.
-                          Default: https://vocalize-api.dgpisces.com
+                          Default: https://api.example.com
     VOCALIZE_INVITE_TOKEN Required when API base is non-localhost.
                           Set to match VOCALIZE_INVITE_TOKEN on the Pi.
 
@@ -53,7 +53,7 @@ INTERVAL_S = 30 * 60  # one cycle every 30 minutes
 DEFAULT_DURATION_MIN = 24 * 60  # 24 hours
 DEFAULT_SCENARIO_ID = "balance_inquiry_en_query"
 DEFAULT_SEED_ID = "direct"
-DEFAULT_API_BASE = "https://vocalize-api.dgpisces.com"
+DEFAULT_API_BASE = "https://api.example.com"
 
 # Path to scenarios.yaml (sibling of tests/integration/ai_merchant.py)
 _SCENARIOS_YAML = (

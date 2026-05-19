@@ -7,16 +7,16 @@
 #
 # This file documents the intended ingress shape so reviewers can see what the
 # tunnel exposes; the actual ingress lives in the Cloudflare dashboard
-# (Zero Trust → Networks → Tunnels → dgpisces-server1 → Public Hostname) /
+# (Zero Trust → Networks → Tunnels → your-tunnel-name → Public Hostname) /
 # Cloudflare API tunnel config. The dashboard / API is the source of truth —
 # update this YAML whenever the live ingress changes so reviewers of the OSS
 # mirror see the current shape.
 #
-# Tunnel: dgpisces-server1 (<TUNNEL_ID_PLACEHOLDER; configured via cloudflared service install token>)
+# Tunnel: your-tunnel-name (<TUNNEL_ID_PLACEHOLDER; configured via cloudflared service install token>)
 
 ingress:
-  - hostname: vocalize-api.dgpisces.com
+  - hostname: api.example.com
     service: http://localhost:8080
-  - hostname: vocalize.dgpisces.com
+  - hostname: vocalize.example.com
     service: http://localhost:3000
   - service: http_status:404

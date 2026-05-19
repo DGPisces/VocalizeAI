@@ -1,7 +1,7 @@
 /*
  * globals.css — base resets + B2 (browser audio bridge) chrome.
  *
- * Token primitives live in design-tokens.css (vendored from the dgpisces
+ * Token primitives live in design-tokens.css (vendored from the shared
  * design system). Component classes for B3a phases live in components.css.
  * Keep this file scoped to: design-token import, base resets, body chrome,
  * skip-link, and the B2 browser-audio shell (.app-shell / .page-frame /

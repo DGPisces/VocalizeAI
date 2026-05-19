@@ -47,7 +47,7 @@ def _default_user_pipeline_factory(transport):
     )
 
 
-_DEFAULT_PROD_ORIGINS = ["https://vocalize.dgpisces.com"]
+_DEFAULT_PROD_ORIGINS: list[str] = []
 _DEFAULT_DEV_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
 
@@ -58,7 +58,7 @@ def create_app() -> FastAPI:
         VOCALIZE_HOST / VOCALIZE_PORT — where uvicorn binds (handled by main()).
         VOCALIZE_CORS_ORIGINS — comma-separated allowed origins; defaults to
             dev origins when VOCALIZE_HOST is 127.0.0.1/localhost, else
-            the single production origin https://vocalize.dgpisces.com (D-10).
+            empty (operator MUST set this env var in non-localhost mode — see D-10).
         VOCALIZE_WS_BASE_URL — REQUIRED when VOCALIZE_HOST is not localhost.
             The public WS prefix echoed back from POST /api/sessions.
             Raises RuntimeError at startup when absent in non-localhost mode
@@ -126,7 +126,7 @@ def create_app() -> FastAPI:
         raise RuntimeError(
             "VOCALIZE_WS_BASE_URL is required when VOCALIZE_HOST is not localhost "
             "(closes Host-header spoofing vector — see CONCERNS.md). "
-            "Example: wss://vocalize-api.dgpisces.com"
+            "Example: wss://api.example.com"
         )
 
     register_session_routes(app, registry=registry)
