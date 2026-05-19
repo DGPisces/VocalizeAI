@@ -7,20 +7,16 @@ NOT TestClient-based — see PATTERNS.md §scripts/stability-24h-driver.py.
 Usage (run from a remote runner host):
     ssh <your-runner-host>
     cd /path/to/VocalizeAI
-    export VOCALIZE_API_BASE=https://vocalize-api.dgpisces.com
-    export VOCALIZE_INVITE_TOKEN=<token>
+    export VOCALIZE_API_BASE=https://api.example.com
     python scripts/stability-24h-driver.py --duration-minutes 1440 \\
         --scenario balance_inquiry_en_query --seed direct
 
 Environment variables:
     VOCALIZE_API_BASE     Base URL for the Pi orchestrator REST API.
-                          Default: https://vocalize-api.dgpisces.com
-    VOCALIZE_INVITE_TOKEN Required when API base is non-localhost.
-                          Set to match VOCALIZE_INVITE_TOKEN on the Pi.
+                          Default: https://api.example.com
 
 Prerequisites on Pi (MUST be set before the 24h run):
     VOCALIZE_ENABLE_TEST_FRAMES=1  in /opt/vocalize/.env (or your VOCALIZE_HOME path)
-    VOCALIZE_INVITE_TOKEN=<token>  in /opt/vocalize/.env (or your VOCALIZE_HOME path)
 
 After the run, paste the output file into
 docs/release/24h-stability-evidence.md for the release record.
@@ -53,7 +49,7 @@ INTERVAL_S = 30 * 60  # one cycle every 30 minutes
 DEFAULT_DURATION_MIN = 24 * 60  # 24 hours
 DEFAULT_SCENARIO_ID = "balance_inquiry_en_query"
 DEFAULT_SEED_ID = "direct"
-DEFAULT_API_BASE = "https://vocalize-api.dgpisces.com"
+DEFAULT_API_BASE = "https://api.example.com"
 
 # Path to scenarios.yaml (sibling of tests/integration/ai_merchant.py)
 _SCENARIOS_YAML = (
@@ -118,7 +114,6 @@ def _get_merchant_lang(scenario_id: str) -> str:
 # ---------------------------------------------------------------------------
 async def one_cycle(
     api_base: str,
-    invite_token: str | None,
     scenario_id: str,
     seed_id: str,
 ) -> dict[str, Any]:
@@ -131,8 +126,6 @@ async def one_cycle(
     """
     cycle_start = time.time()
     headers: dict[str, str] = {}
-    if invite_token:
-        headers["X-Invite-Token"] = invite_token
 
     user_lang = _get_user_lang(scenario_id)
     merchant_lang = _get_merchant_lang(scenario_id)
@@ -263,14 +256,9 @@ async def one_cycle(
 # ---------------------------------------------------------------------------
 # Metrics snapshot
 # ---------------------------------------------------------------------------
-async def fetch_metrics_snapshot(
-    api_base: str,
-    invite_token: str | None = None,
-) -> str:
+async def fetch_metrics_snapshot(api_base: str) -> str:
     """GET {api_base}/metrics and return the Prometheus exposition text."""
     headers: dict[str, str] = {}
-    if invite_token:
-        headers["X-Invite-Token"] = invite_token
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(f"{api_base}/metrics", headers=headers)
@@ -370,16 +358,6 @@ def _write_evidence(
 # ---------------------------------------------------------------------------
 async def main(args: argparse.Namespace) -> None:
     api_base = args.api_base
-    invite_token = args.invite_token
-
-    # Require token for non-localhost
-    is_localhost = api_base.startswith("http://127.") or api_base.startswith("http://localhost")
-    if not is_localhost and not invite_token:
-        log.error(
-            "VOCALIZE_INVITE_TOKEN is required when VOCALIZE_API_BASE is not localhost.\n"
-            "Set it in your environment before running the driver."
-        )
-        sys.exit(1)
 
     log.info(
         "stability-24h-driver starting: api_base=%s scenario=%s seed=%s duration_min=%d",
@@ -393,7 +371,7 @@ async def main(args: argparse.Namespace) -> None:
     metrics_snapshots: list[tuple[float, str]] = []
 
     # Initial metrics snapshot
-    snap = await fetch_metrics_snapshot(api_base, invite_token)
+    snap = await fetch_metrics_snapshot(api_base)
     metrics_snapshots.append((time.time(), snap))
     log.info("initial /metrics snapshot taken")
 
@@ -403,7 +381,7 @@ async def main(args: argparse.Namespace) -> None:
         cycle_start = time.time()
         log.info("--- cycle %d start (remaining: %.0f min) ---", cycle_num, (end - cycle_start) / 60)
 
-        result = await one_cycle(api_base, invite_token, args.scenario, args.seed)
+        result = await one_cycle(api_base, args.scenario, args.seed)
         session_log.append(result)
         status = "OK" if result["ok"] else f"FAIL: {result.get('error', '')}"
         log.info("cycle %d result: %s (%.1fs)", cycle_num, status, result.get("elapsed_s", 0))
@@ -411,7 +389,7 @@ async def main(args: argparse.Namespace) -> None:
         # Periodic metrics snapshot
         last_snap_t = metrics_snapshots[-1][0]
         if (cycle_start - last_snap_t) >= args.metrics_snapshot_interval_hours * 3600:
-            snap = await fetch_metrics_snapshot(api_base, invite_token)
+            snap = await fetch_metrics_snapshot(api_base)
             metrics_snapshots.append((time.time(), snap))
             log.info("metrics snapshot taken at cycle %d", cycle_num)
 
@@ -423,7 +401,7 @@ async def main(args: argparse.Namespace) -> None:
             await asyncio.sleep(min(sleep_s, remaining))
 
     # Final metrics snapshot
-    snap = await fetch_metrics_snapshot(api_base, invite_token)
+    snap = await fetch_metrics_snapshot(api_base)
     metrics_snapshots.append((time.time(), snap))
     log.info("final /metrics snapshot taken; %d cycles completed", cycle_num)
 
@@ -484,7 +462,6 @@ if __name__ == "__main__":
 
     # Resolve env vars
     args.api_base = os.environ.get("VOCALIZE_API_BASE", DEFAULT_API_BASE).rstrip("/")
-    args.invite_token = os.environ.get("VOCALIZE_INVITE_TOKEN") or None
 
     # Default evidence output path
     if args.evidence_out is None:

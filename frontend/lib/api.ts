@@ -53,34 +53,10 @@ function apiBaseUrl(): string {
   return value.replace(/\/$/, "");
 }
 
-/**
- * Returns the invite token from the build-time env var, or null when unset.
- *
- * Returning null (not throwing) is intentional: localhost-dev must work without
- * any token configured.
- *
- * WARNING: NEXT_PUBLIC_ vars are embedded in the client-side JS bundle and are
- * therefore recoverable by any user who can load the page. This is an accepted
- * v1 limitation — the shared token provides friction, not true access control.
- * Per-user auth (AUTH-01, v1.x) will replace this gate entirely.
- *
- * For stronger protection before AUTH-01 lands, consider routing the session
- * creation call through a Next.js API route that reads the token from a
- * server-side env var (no NEXT_PUBLIC_ prefix) so it never reaches the bundle.
- */
-function inviteToken(): string | null {
-  const value = process.env.NEXT_PUBLIC_VOCALIZE_INVITE_TOKEN;
-  return value && value.length > 0 ? value : null;
-}
-
 export async function createSession(
   body: CreateSessionRequest = {},
 ): Promise<SessionResponse> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = inviteToken();
-  if (token !== null) {
-    headers["X-Invite-Token"] = token;
-  }
   const res = await fetch(`${apiBaseUrl()}/api/sessions`, {
     method: "POST",
     cache: "no-store",
@@ -88,7 +64,6 @@ export async function createSession(
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    // 401 = invite-required per D-08; bubble to caller for user-facing "invite required" message
     throw new Error(`createSession failed: ${res.status}`);
   }
   return (await res.json()) as SessionResponse;

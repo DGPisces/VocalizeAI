@@ -47,7 +47,7 @@ def _default_user_pipeline_factory(transport):
     )
 
 
-_DEFAULT_PROD_ORIGINS = ["https://vocalize.dgpisces.com"]
+_DEFAULT_PROD_ORIGINS: list[str] = []
 _DEFAULT_DEV_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
 
@@ -58,14 +58,12 @@ def create_app() -> FastAPI:
         VOCALIZE_HOST / VOCALIZE_PORT — where uvicorn binds (handled by main()).
         VOCALIZE_CORS_ORIGINS — comma-separated allowed origins; defaults to
             dev origins when VOCALIZE_HOST is 127.0.0.1/localhost, else
-            the single production origin https://vocalize.dgpisces.com (D-10).
+            empty (operator MUST set this env var in non-localhost mode — see D-10).
         VOCALIZE_WS_BASE_URL — REQUIRED when VOCALIZE_HOST is not localhost.
             The public WS prefix echoed back from POST /api/sessions.
             Raises RuntimeError at startup when absent in non-localhost mode
             (closes Host-header spoofing vector D-11 — see CONCERNS.md).
             In localhost-dev mode the WS URL is derived from the request base_url.
-        VOCALIZE_INVITE_TOKEN — shared invite secret for POST /api/sessions;
-            gate disabled in localhost-dev mode when unset (D-08).
         GPU_HOST / SENSEVOICE_WS_PORT / COSYVOICE_WS_PORT — GPU service targets.
     """
     app = FastAPI(title="VocalizeAI", version="0.1.0")
@@ -99,7 +97,7 @@ def create_app() -> FastAPI:
         allow_origins=cors_origins,
         allow_credentials=False,
         allow_methods=["GET", "POST", "DELETE"],  # D-10: explicit list; no wildcards
-        allow_headers=["Content-Type", "X-Invite-Token"],  # explicit; covers auth header
+        allow_headers=["Content-Type"],  # explicit; no wildcards
     )
 
     registry = SessionRegistry()
@@ -126,7 +124,7 @@ def create_app() -> FastAPI:
         raise RuntimeError(
             "VOCALIZE_WS_BASE_URL is required when VOCALIZE_HOST is not localhost "
             "(closes Host-header spoofing vector — see CONCERNS.md). "
-            "Example: wss://vocalize-api.dgpisces.com"
+            "Example: wss://api.example.com"
         )
 
     register_session_routes(app, registry=registry)

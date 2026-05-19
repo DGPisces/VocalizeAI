@@ -12,7 +12,10 @@ VocalizeAI follows an out-of-band contribution model (D-16):
 3. This keeps the private repo as the single source of truth and preserves the
    `.planning/` workflow.
 
-If your contribution is security-related, see [SECURITY.md](SECURITY.md) first.
+VocalizeAI is a self-deploy project, so there is no centrally hosted
+instance to defend. Security-relevant fixes go through the same PR flow
+as any other contribution; flag the concern in the PR description so
+reviewers know to prioritise it.
 
 ## Setting up the dev environment
 
@@ -67,7 +70,7 @@ test(<area>): <verb> <noun>
 refactor(<area>): <verb> <noun>
 ```
 
-Examples: `feat(server): add X-Invite-Token gate`, `fix(frontend): handle 401 on session create`.
+Examples: `feat(server): bound task length`, `fix(frontend): handle 401 on session create`.
 
 ## Branches
 
@@ -77,8 +80,11 @@ directly to `main`.
 ## Issue triage / vulnerability reporting
 
 - Ordinary bugs and feature requests: file a GitHub issue.
-- Security vulnerabilities: follow the process in [SECURITY.md](SECURITY.md).
-  Do NOT file public GitHub issues for security topics.
+- Security-relevant findings: file a GitHub issue here. VocalizeAI is a
+  self-deploy project (no centrally hosted instance), so there is no
+  separate private disclosure channel. Each operator is responsible for
+  their own deployment; report findings publicly so every operator can
+  pick up the fix.
 
 ## CI behavior for external PRs
 
@@ -110,9 +116,9 @@ VocalizeAI's CI pipeline has two tiers depending on where your PR originates:
 
 VocalizeAI does not adopt a formal Code of Conduct at this stage. Standard
 professional conduct is expected: be respectful, assume good faith, focus on
-the technical content. Disputes that cannot be resolved in-thread escalate to
-the maintainer via email (see SECURITY.md for the contact channel; for
-non-security disputes use the same address).
+the technical content. Disputes that cannot be resolved in-thread escalate
+by opening a GitHub issue with a clear summary; the maintainer will follow
+up there.
 
 ## License
 

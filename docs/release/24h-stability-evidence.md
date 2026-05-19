@@ -40,7 +40,7 @@ closes this gap:
 | Operator | DGPisces |
 | Date / time (start) | 2026-05-17T19:56:20Z |
 | Date / time (end) | 2026-05-18T19:56:20Z |
-| Backend URL | `http://localhost:8080` (Pi loopback; same orchestrator that `https://vocalize-api.dgpisces.com` fronts via Cloudflare Tunnel) |
+| Backend URL | `http://localhost:8080` (Pi loopback; same orchestrator that `https://api.example.com` fronts via Cloudflare Tunnel) |
 | Browser and version | N/A — driver-only run; real-audio interleave intentionally skipped (see Real-Audio Interleave Log below) |
 | STT service health | Pass (`/health` reported `gpu_reachable: true` throughout) |
 | TTS service health | Pass (CosyVoice docker container up 2 days, healthy) |
@@ -87,7 +87,6 @@ transient failures acceptable).
 Driver command used:
 ```bash
 export VOCALIZE_API_BASE=http://localhost:8080
-export VOCALIZE_INVITE_TOKEN=<token>
 python scripts/stability-24h-driver.py \
   --duration-minutes 1440 \
   --scenario balance_inquiry_en_query \
@@ -95,7 +94,7 @@ python scripts/stability-24h-driver.py \
   --evidence-out docs/release/24h-stability-evidence-runs/2026-05-17T195620Z-pi-loopback.md
 ```
 
-Driver invoked with API base = `http://localhost:8080` (Pi loopback) rather than `https://vocalize-api.dgpisces.com` because the driver ran on the Pi itself per operator preference (full automation, no Attu host). The Cloudflare Tunnel ingress for `vocalize.dgpisces.com` was verified live separately during DEPLOY-03 deploy (curl → HTTP/2 502 + Universal SSL `*.dgpisces.com` cert).
+Driver invoked with API base = `http://localhost:8080` (Pi loopback) rather than `https://api.example.com` because the driver ran on the Pi itself per operator preference (full automation, no Attu host). The Cloudflare Tunnel ingress for `vocalize.example.com` was verified live separately during DEPLOY-03 deploy (curl → HTTP/2 502 + Universal SSL `*.example.com` cert).
 
 ---
 

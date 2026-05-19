@@ -29,7 +29,6 @@ def _make_client(monkeypatch, *, host: str, ws_base_url: str | None = None) -> T
         monkeypatch.setenv("VOCALIZE_WS_BASE_URL", ws_base_url)
     else:
         monkeypatch.delenv("VOCALIZE_WS_BASE_URL", raising=False)
-    monkeypatch.delenv("VOCALIZE_INVITE_TOKEN", raising=False)
     monkeypatch.delenv("VOCALIZE_CORS_ORIGINS", raising=False)
     reset_config()
     return TestClient(create_app())
@@ -56,7 +55,6 @@ def test_localhost_without_ws_base_url_succeeds(monkeypatch):
 def test_non_localhost_without_ws_base_url_raises(monkeypatch):
     monkeypatch.setenv("VOCALIZE_HOST", "0.0.0.0")
     monkeypatch.delenv("VOCALIZE_WS_BASE_URL", raising=False)
-    monkeypatch.delenv("VOCALIZE_INVITE_TOKEN", raising=False)
     monkeypatch.delenv("VOCALIZE_CORS_ORIGINS", raising=False)
     reset_config()
     with pytest.raises(RuntimeError, match="VOCALIZE_WS_BASE_URL is required"):
@@ -71,7 +69,7 @@ def test_non_localhost_with_ws_base_url_succeeds(monkeypatch):
     client = _make_client(
         monkeypatch,
         host="0.0.0.0",
-        ws_base_url="wss://vocalize-api.dgpisces.com",
+        ws_base_url="wss://api.example.com",
     )
     # App started without RuntimeError; 404 here just means session not found.
     resp = client.get("/api/sessions/nonexistent-id")
@@ -89,7 +87,7 @@ def test_cors_localhost_origin_allowed(monkeypatch):
         headers={
             "Origin": "http://localhost:3000",
             "Access-Control-Request-Method": "POST",
-            "Access-Control-Request-Headers": "X-Invite-Token",
+            "Access-Control-Request-Headers": "Content-Type",
         },
     )
     assert resp.status_code == 200
@@ -124,7 +122,7 @@ def test_cors_preflight_returns_explicit_methods_and_headers(monkeypatch):
         headers={
             "Origin": "http://localhost:3000",
             "Access-Control-Request-Method": "POST",
-            "Access-Control-Request-Headers": "Content-Type, X-Invite-Token",
+            "Access-Control-Request-Headers": "Content-Type",
         },
     )
     assert resp.status_code == 200
@@ -135,8 +133,8 @@ def test_cors_preflight_returns_explicit_methods_and_headers(monkeypatch):
     assert "POST" in allow_methods
     assert "DELETE" in allow_methods
     assert "*" not in allow_methods
-    # Headers must include X-Invite-Token
-    assert "X-Invite-Token" in allow_headers
+    # Headers must include Content-Type
+    assert "Content-Type" in allow_headers
 
 
 # ---------------------------------------------------------------------------
@@ -147,7 +145,6 @@ def test_cors_wildcard_origins_raises_at_startup(monkeypatch):
     monkeypatch.setenv("VOCALIZE_HOST", "127.0.0.1")
     monkeypatch.setenv("VOCALIZE_CORS_ORIGINS", "*")
     monkeypatch.delenv("VOCALIZE_WS_BASE_URL", raising=False)
-    monkeypatch.delenv("VOCALIZE_INVITE_TOKEN", raising=False)
     reset_config()
     with pytest.raises(RuntimeError, match="VOCALIZE_CORS_ORIGINS must not contain"):
         create_app()
@@ -159,9 +156,8 @@ def test_cors_wildcard_origins_raises_at_startup(monkeypatch):
 
 def test_cors_wildcard_mixed_with_real_origins_raises(monkeypatch):
     monkeypatch.setenv("VOCALIZE_HOST", "0.0.0.0")
-    monkeypatch.setenv("VOCALIZE_WS_BASE_URL", "wss://vocalize-api.dgpisces.com")
+    monkeypatch.setenv("VOCALIZE_WS_BASE_URL", "wss://api.example.com")
     monkeypatch.setenv("VOCALIZE_CORS_ORIGINS", "https://example.com,*")
-    monkeypatch.delenv("VOCALIZE_INVITE_TOKEN", raising=False)
     reset_config()
     with pytest.raises(RuntimeError, match="VOCALIZE_CORS_ORIGINS must not contain"):
         create_app()

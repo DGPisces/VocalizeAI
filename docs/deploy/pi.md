@@ -127,14 +127,12 @@ sudo nano /opt/vocalize/.env
 | `VOCALIZE_HOST` | default ok | uvicorn bind host; set to `0.0.0.0` for Pi production |
 | `VOCALIZE_PORT` | default ok | uvicorn bind port; default `8080` |
 | `ORCHESTRATOR_LISTEN_PORT` | default ok | Pi service port; default `8080` (legacy compatibility) |
-| `VOCALIZE_INVITE_TOKEN` | **yes** | Shared invite secret for `POST /api/sessions`; generate with `python3 -c 'import secrets; print(secrets.token_urlsafe(32))'` |
-| `VOCALIZE_WS_BASE_URL` | **yes** | Public WS base URL; e.g. `wss://vocalize-api.<your-domain>` — startup raises if missing in non-localhost mode |
+| `VOCALIZE_WS_BASE_URL` | **yes** | Public WS base URL; e.g. `wss://api.<your-domain>` — startup raises if missing in non-localhost mode |
 | `VOCALIZE_CORS_ORIGINS` | default ok | Comma-separated allowed CORS origins; default auto-picked from VOCALIZE_HOST |
 | `DEFAULT_LANGUAGE` | default ok | `zh` or `en`; default `zh` |
 | `LOG_DIR` | default ok | Log directory; default `logs` |
 | `NEXT_PUBLIC_VOCALIZE_API_BASE_URL` | yes (for frontend) | Frontend API base URL; baked into JS bundle at build time |
 | `NEXT_PUBLIC_VOCALIZE_WS_BASE_URL` | optional | Frontend WS base; derived from API base if absent |
-| `NEXT_PUBLIC_VOCALIZE_INVITE_TOKEN` | yes (for frontend in prod) | Shared invite token baked into JS bundle |
 
 **Example production `.env` (use your own values for all `<...>` placeholders):**
 
@@ -147,9 +145,8 @@ SENSEVOICE_WS_PORT=8000
 COSYVOICE_WS_PORT=8001
 VOCALIZE_HOST=0.0.0.0
 VOCALIZE_PORT=8080
-VOCALIZE_INVITE_TOKEN=<random-base64-32>
-VOCALIZE_WS_BASE_URL=wss://vocalize-api.<your-domain>
-VOCALIZE_CORS_ORIGINS=https://vocalize.<your-domain>
+VOCALIZE_WS_BASE_URL=wss://api.<your-domain>
+VOCALIZE_CORS_ORIGINS=https://<your-domain>
 ```
 
 ---
@@ -248,9 +245,7 @@ VOCALIZE_API_BASE=http://127.0.0.1:8080 bash scripts/smoke.sh
 # Exit 0 = working deployment
 
 # Smoke test against the public Cloudflare Tunnel URL:
-VOCALIZE_API_BASE=https://vocalize-api.<your-domain> \
-  VOCALIZE_INVITE_TOKEN=<your-token> \
-  bash scripts/smoke.sh
+VOCALIZE_API_BASE=https://api.<your-domain> bash scripts/smoke.sh
 ```
 
 The smoke script exercises 6 round-trips: `GET /health`, `POST /api/sessions`,

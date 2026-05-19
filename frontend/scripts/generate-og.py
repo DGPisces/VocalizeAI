@@ -5,7 +5,7 @@ Produces:
   frontend/public/og/og-zh.png  (1200×630, Chinese)
   frontend/public/og/og-en.png  (1200×630, English)
 
-Design system: dgpisces Apple-style tokens
+Design system: Apple-style design tokens
   - Accent:  #007aff (blue) / #5e5ce6 (purple)
   - BG:      linear gradient from #0a0a0f → #1a1a2e
   - Text:    #f5f5f7 (primary), #98989d (soft)
@@ -312,7 +312,7 @@ def generate(lang: str, tagline: str, out_path: str):
         font_url = ImageFont.truetype(FONT_MONO, 15)
     except Exception:
         font_url = ImageFont.load_default()
-    draw.text((tag_x, strip_y), "vocalize.dgpisces.com", font=font_url, fill=TEXT_SOFT)
+    draw.text((tag_x, strip_y), "vocalize.example.com", font=font_url, fill=TEXT_SOFT)
 
     # 10. Decorative divider line (vertical, separating text from illustration)
     div_x = int(W * 0.60)

@@ -197,7 +197,7 @@ step6_systemd_unit() {
         run_or_dry "copy .env.template -> ${INSTALL_DIR}/.env" \
             sudo cp "${ENV_SRC}" "${ENV_DST}"
         echo "  Created ${ENV_DST} from template — edit it before starting the service."
-        echo "  At minimum, set: OPENAI_API_KEY, VOCALIZE_INVITE_TOKEN, VOCALIZE_WS_BASE_URL, GPU_HOST"
+        echo "  At minimum, set: OPENAI_API_KEY, VOCALIZE_WS_BASE_URL, VOCALIZE_CORS_ORIGINS, GPU_HOST"
     else
         echo "  ${ENV_DST} already exists — preserving."
     fi

@@ -53,9 +53,6 @@ class Config:
     # 日志配置
     log_dir: str = "logs"
 
-    # Phase 4 D-08: X-Invite-Token 共享密钥；None = 本地开发模式，跳过邀请验证
-    invite_token: str | None = None
-
     @classmethod
     def from_env(cls) -> "Config":
         """从环境变量和 .env 文件加载配置。"""
@@ -74,7 +71,6 @@ class Config:
             ),
             default_language=os.getenv("DEFAULT_LANGUAGE", cls.default_language),
             log_dir=os.getenv("LOG_DIR", cls.log_dir),
-            invite_token=os.getenv("VOCALIZE_INVITE_TOKEN") or None,
         )
 
     def validate_for_phase(

@@ -28,7 +28,7 @@ the AI audio pipeline and the PSTN call.
 
 ### End-to-End Request Flow (Quick Reference)
 
-1. **User creates a session** — `POST /api/sessions` with `X-Invite-Token` → receives
+1. **User creates a session** — `POST /api/sessions` → receives
    `session_id` + `ws_url`.
 2. **User sets the task** — `POST /api/sessions/{id}/task` with `{"task": "..."}` → Phase
    transitions `draft → task_planning → collecting`.
@@ -374,16 +374,17 @@ See: `src/vocalize/server/frames.py`
 
 ## REST Surface
 
-The REST API is mounted at `/api/sessions`. Authentication is via a shared
-invite token (`X-Invite-Token` header on session creation). In localhost-dev
-mode (`VOCALIZE_HOST=127.0.0.1` and `VOCALIZE_INVITE_TOKEN` unset), the token
-gate is disabled.
+The REST API is mounted at `/api/sessions`. The backend ships no
+request-level authentication in v1; self-deploy operators restrict
+reachability at the network or proxy layer (per-user auth is v1.x
+scope — requirement `AUTH-01`).
 
 See: `src/vocalize/server/sessions.py`, `src/vocalize/server/health.py`
 
 ### `POST /api/sessions`
 
-**Auth:** `X-Invite-Token` header (design constraint D-08; uses `secrets.compare_digest`)
+**Auth:** None at the backend layer in v1 (network/proxy restriction is the
+operator's responsibility).
 
 **Request body** (`CreateSessionRequest`, all optional):
 ```json
@@ -405,7 +406,7 @@ See: `src/vocalize/server/sessions.py`, `src/vocalize/server/health.py`
 }
 ```
 
-See: `src/vocalize/server/sessions.py` — `_check_invite_token`, `CreateSessionRequest`
+See: `src/vocalize/server/sessions.py` — `CreateSessionRequest`
 
 ---
 
@@ -565,17 +566,17 @@ See: `src/vocalize/server/ws.py`, `frontend/lib/audio*`, `frontend/components/Br
 ## Security Posture
 
 The security controls relevant to the architecture are documented here for
-API consumers and security researchers. For the full threat model and disclosure
-channel, see [SECURITY.md](../SECURITY.md).
+API consumers and security researchers. VocalizeAI is a self-deploy
+project (no centrally hosted instance); report security-relevant findings
+via GitHub Issues — same channel as any other bug.
 
-### Invite-Token Gate (D-08)
+### Authentication (D-08, retired)
 
-`POST /api/sessions` requires `X-Invite-Token: <token>` matching the server-side
-`VOCALIZE_INVITE_TOKEN` env var. The comparison uses `secrets.compare_digest` to
-prevent timing attacks. In localhost-dev mode (`VOCALIZE_HOST=127.0.0.1` and
-`VOCALIZE_INVITE_TOKEN` unset), the gate is disabled for development convenience.
-
-See: `src/vocalize/server/sessions.py` — `_check_invite_token`
+The original D-08 shared-invite-token gate has been removed; v1 ships no
+backend-level auth on `POST /api/sessions` or the WebSocket. Self-deploy
+operators are expected to restrict reachability at the network or proxy
+layer (Cloudflare Access, VPN, reverse-proxy auth, etc.). Per-user
+authentication is v1.x scope (requirement `AUTH-01`).
 
 ### Task Length Bound (D-09)
 
@@ -612,4 +613,3 @@ See: `src/vocalize/server/ws.py`, `src/vocalize/server/sessions.py`
 - **[docs/deploy/local.md](docs/deploy/local.md)** — Mac/Linux dev environment setup and env-var reference
 - **[docs/deploy/pi.md](docs/deploy/pi.md)** — End-to-end Pi production deployment runbook
 - **[CONTRIBUTING.md](../CONTRIBUTING.md)** — Contributor flow, code style, commit conventions
-- **[SECURITY.md](../SECURITY.md)** — Vulnerability reporting, threat model, emergency rollback
