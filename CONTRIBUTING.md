@@ -80,6 +80,32 @@ directly to `main`.
 - Security vulnerabilities: follow the process in [SECURITY.md](SECURITY.md).
   Do NOT file public GitHub issues for security topics.
 
+## CI behavior for external PRs
+
+VocalizeAI's CI pipeline has two tiers depending on where your PR originates:
+
+**External fork PRs** (contributors opening a PR from their own fork):
+- Run: ruff lint (`src/`), mypy type check, pytest unit tests, TypeScript type check,
+  Vitest unit tests, and the Playwright loopback smoke tests.
+- Skip: the `ai-merchant` job. This job requires repository secrets (LLM API keys) that
+  GitHub does not expose to fork PRs for security reasons. The job is skipped with a
+  neutral status — it is **not counted as a required check** for fork PRs.
+- All skipped jobs show a "skipped" badge, not a failure. Your PR is considered
+  CI-green when all non-skipped jobs pass.
+
+**Internal PRs** (PRs opened from a branch within `DGPisces/VocalizeAI`):
+- Run all jobs including `ai-merchant` (deterministic judge; no live LLM key required
+  in CI — real-LLM coverage is gated behind `--release-audio` and runs pre-release).
+
+**What this means for contributors:**
+- You don't need to supply any API keys. Lint, type checks, and unit tests are fully
+  self-contained and run on GitHub-hosted ubuntu runners.
+- If the maintainer needs to validate AI-merchant behavior on your PR, they will apply
+  the change to the internal repo (per the out-of-band contribution model above) and
+  run the full pipeline there.
+- The `good first issue` label on GitHub Issues marks well-scoped bugs and features
+  suitable for first-time contributors.
+
 ## Code of Conduct
 
 VocalizeAI does not adopt a formal Code of Conduct at this stage. Standard

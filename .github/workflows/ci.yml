@@ -14,19 +14,19 @@ permissions:
 jobs:
   backend:
     name: Backend lint and scoped tests
-    runs-on: [self-hosted, macOS]
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Install backend dependencies
-        # Use system python3.11 (homebrew on the self-hosted Mac runner)
-        # instead of actions/setup-python@v5, which hard-codes the
-        # GitHub-hosted /Users/runner/hostedtoolcache path and fails on a
-        # self-hosted Mac with `mkdir: /Users/runner: Permission denied`
-        # regardless of AGENT_TOOLSDIRECTORY / RUNNER_TOOL_CACHE / TOOLCACHE_ROOT.
         run: |
-          python3.11 -m venv .venv
+          python -m venv .venv
           . .venv/bin/activate
           python -m pip install --upgrade pip
           python -m pip install -e '.[dev]'
@@ -34,16 +34,7 @@ jobs:
       - name: Ruff
         run: |
           . .venv/bin/activate
-          ruff check \
-            src/vocalize/server/frames.py \
-            src/vocalize/server/runner.py \
-            tests/test_server_frames.py \
-            tests/test_server_ws_integration.py \
-            tests/test_runner_phase_transitions.py \
-            tests/integration/ai_merchant.py \
-            tests/integration/test_ai_merchant.py \
-            tests/integration/test_judge.py \
-            tests/integration/conftest.py
+          ruff check src/
 
       - name: Mypy
         run: |
@@ -73,7 +64,7 @@ jobs:
 
   frontend:
     name: Frontend type and unit tests
-    runs-on: [self-hosted, macOS]
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -81,7 +72,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: '20'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -99,16 +90,19 @@ jobs:
 
   playwright-loopback:
     name: Playwright loopback
-    runs-on: [self-hosted, macOS]
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Install backend dependencies
-        # See backend job for why we skip actions/setup-python@v5 on the
-        # self-hosted Mac runner.
         run: |
-          python3.11 -m venv .venv
+          python -m venv .venv
           . .venv/bin/activate
           python -m pip install --upgrade pip
           python -m pip install -e '.[dev]'
@@ -116,7 +110,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: '20'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -128,14 +122,6 @@ jobs:
         working-directory: frontend
         run: npm exec -- playwright install --with-deps chromium
 
-      - name: Free up port 8000 for loopback server
-        # Self-hosted Mac may have a dev uvicorn running on 8000. Playwright
-        # webServer.reuseExistingServer is !CI so it won't reuse it; if the
-        # port is busy, Playwright errors out. Kill anything bound to 8000
-        # before starting. The developer can restart their uvicorn after CI.
-        run: |
-          lsof -ti :8000 | xargs kill -9 2>/dev/null || true
-
       - name: Playwright integration tests
         working-directory: frontend
         run: >
@@ -145,16 +131,25 @@ jobs:
 
   ai-merchant:
     name: AI merchant scenarios
-    runs-on: [self-hosted, macOS]
+    runs-on: ubuntu-latest
+    # Skip on fork PRs — secrets are not available and this job would fail
+    # rather than produce a meaningful result. External contributors get full
+    # coverage from backend + frontend + playwright-loopback jobs above.
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository ||
+      github.event_name == 'push'
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Install backend dependencies
-        # See backend job for why we skip actions/setup-python@v5 on the
-        # self-hosted Mac runner.
         run: |
-          python3.11 -m venv .venv
+          python -m venv .venv
           . .venv/bin/activate
           python -m pip install --upgrade pip
           python -m pip install -e '.[dev]'
@@ -182,9 +177,7 @@ jobs:
           VOCALIZE_ENABLE_TEST_FRAMES: "1"
         run: |
           export AI_MERCHANT_PR_COMMAND="pytest tests/integration/test_ai_merchant.py -q"
-          # python3.11 (not `python`) because the self-hosted Mac runner
-          # has homebrew python3.11 on PATH but no `python` alias.
-          python3.11 - <<'PY'
+          python - <<'PY'
           import os
 
           command = os.environ["AI_MERCHANT_PR_COMMAND"]
@@ -201,7 +194,7 @@ jobs:
 
       - name: Upload AI merchant failure evidence
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: ai-merchant-evidence
           path: tests/integration/evidence/

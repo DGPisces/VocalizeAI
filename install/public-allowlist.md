@@ -12,6 +12,8 @@ Paths are anchored at repo root. Used by `scripts/build-public-filelist.py`.
 
 - README.md
 - README.zh-CN.md
+- CHANGELOG.md
+- CODEOWNERS
 - LICENSE
 - SECURITY.md
 - CONTRIBUTING.md
