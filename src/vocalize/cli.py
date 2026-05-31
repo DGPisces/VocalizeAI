@@ -51,6 +51,7 @@ def main(argv: list[str] | None = None) -> int:
     setup_parser.add_argument("--llm-api-key")
     setup_parser.add_argument("--llm-model")
     setup_parser.add_argument("--llm-thinking-mode", choices=THINKING_MODE_CHOICES)
+    setup_parser.add_argument("--port", type=_arg_port)
     setup_parser.add_argument("--global-command", choices=["yes", "no"])
     setup_parser.add_argument("--open-browser", choices=["yes", "no"])
     setup_parser.add_argument("--non-interactive", action="store_true")
@@ -107,7 +108,8 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _setup(args: argparse.Namespace, paths: InstallPaths) -> int:
-    cfg = Config.from_env()
+    setup_env = _install_env(paths)
+    cfg = _config_from_env(setup_env)
     base_url = _value_or_prompt(
         args.llm_base_url,
         "LLM base URL",
@@ -125,6 +127,11 @@ def _setup(args: argparse.Namespace, paths: InstallPaths) -> int:
         "LLM thinking mode",
         choices=THINKING_MODE_CHOICES,
         default=cfg.openai_thinking_mode,
+        non_interactive=args.non_interactive,
+    )
+    port = _port_or_prompt(
+        args.port,
+        default=_port_from_env(setup_env),
         non_interactive=args.non_interactive,
     )
     api_key = args.llm_api_key
@@ -154,6 +161,7 @@ def _setup(args: argparse.Namespace, paths: InstallPaths) -> int:
         openai_base_url=base_url,
         openai_model=model,
         openai_thinking_mode=thinking_mode,
+        vocalize_port=port,
     )
     write_providers_yaml(paths)
     write_preferences(paths, {"open_browser": open_browser})
@@ -300,6 +308,8 @@ def _install_env(paths: InstallPaths) -> dict[str, str]:
     env["VOCALIZE_INSTALL_ROOT"] = str(paths.root)
     env["LOG_DIR"] = str(paths.logs_dir)
     if paths.env_file.is_file():
+        for key, value in _read_env_file(paths.env_file).items():
+            env.setdefault(key, value)
         env["VOCALIZE_ENV_FILE"] = str(paths.env_file)
     provider = paths.bin_dir / "vocalize-mac-speech-provider"
     if provider.is_file():
@@ -309,6 +319,35 @@ def _install_env(paths: InstallPaths) -> dict[str, str]:
     if (frontend / "index.html").is_file():
         env.setdefault("VOCALIZE_FRONTEND_DIST", str(frontend))
     return env
+
+
+def _read_env_file(path: Path) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip().strip("'\"")
+    return values
+
+
+def _config_from_env(env: dict[str, str]) -> Config:
+    previous = os.environ.copy()
+    os.environ.update(env)
+    try:
+        return Config.from_env()
+    finally:
+        os.environ.clear()
+        os.environ.update(previous)
+
+
+def _port_from_env(env: dict[str, str]) -> int:
+    raw = env.get("VOCALIZE_PORT", "8080")
+    try:
+        return _validate_port(int(raw))
+    except ValueError:
+        return 8080
 
 
 def _serve_command() -> list[str]:
@@ -405,6 +444,41 @@ def _bool_choice(
     if answer in NO_VALUES:
         return False
     raise ValueError(f"invalid yes/no answer: {answer}")
+
+
+def _port_or_prompt(
+    value: int | None,
+    *,
+    default: int,
+    non_interactive: bool,
+) -> int:
+    if value is not None:
+        return _validate_port(value)
+    if non_interactive:
+        return default
+    while True:
+        answer = input(f"Local web port [{default}]: ").strip()
+        if not answer:
+            return default
+        try:
+            return _validate_port(int(answer))
+        except ValueError:
+            print("ERROR: port must be an integer from 1 to 65535", file=sys.stderr)
+
+
+def _validate_port(port: int) -> int:
+    if 1 <= port <= 65535:
+        return port
+    raise ValueError(f"invalid port: {port}")
+
+
+def _arg_port(raw: str) -> int:
+    try:
+        return _validate_port(int(raw))
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            "port must be an integer from 1 to 65535"
+        ) from exc
 
 
 def _choice_or_prompt(

@@ -76,6 +76,8 @@ def test_cli_setup_writes_env_providers_and_preferences(
             "test-model",
             "--llm-thinking-mode",
             "enabled",
+            "--port",
+            "9090",
             "--global-command",
             "no",
             "--open-browser",
@@ -90,6 +92,7 @@ def test_cli_setup_writes_env_providers_and_preferences(
     assert "OPENAI_BASE_URL=https://llm.example/v1" in env_text
     assert "OPENAI_MODEL=test-model" in env_text
     assert "OPENAI_THINKING_MODE=enabled" in env_text
+    assert "VOCALIZE_PORT=9090" in env_text
     providers = (tmp_path / "config" / "providers.yaml").read_text(encoding="utf-8")
     assert "provider: macos-native" in providers
     preferences = json.loads(
@@ -210,20 +213,24 @@ def test_cli_start_foreground_applies_install_env(monkeypatch, tmp_path) -> None
     (install_root / "config").mkdir(parents=True)
     (install_root / "logs").mkdir()
     (install_root / "cache").mkdir()
-    (install_root / "config" / ".env").write_text("OPENAI_API_KEY=sk-test\n")
+    (install_root / "config" / ".env").write_text(
+        "OPENAI_API_KEY=sk-test\nVOCALIZE_PORT=9090\n"
+    )
     monkeypatch.setenv("VOCALIZE_INSTALL_ROOT", str(install_root))
-    seen_env: list[str | None] = []
+    seen_env: list[tuple[str | None, str | None]] = []
     monkeypatch.setitem(
         sys.modules,
         "vocalize.main",
         types.SimpleNamespace(
-            main=lambda: seen_env.append(os.getenv("VOCALIZE_ENV_FILE"))
+            main=lambda: seen_env.append(
+                (os.getenv("VOCALIZE_ENV_FILE"), os.getenv("VOCALIZE_PORT"))
+            )
         ),
     )
 
     assert main(["start", "--no-browser"]) == 0
 
-    assert seen_env == [str(install_root / "config" / ".env")]
+    assert seen_env == [(str(install_root / "config" / ".env"), "9090")]
 
 
 def test_cli_start_foreground_delays_browser_until_server_ready(
