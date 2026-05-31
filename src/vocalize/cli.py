@@ -7,6 +7,7 @@ import hashlib
 import os
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import tempfile
@@ -261,8 +262,7 @@ def _update(args: argparse.Namespace, paths: InstallPaths) -> int:
 
     with tempfile.TemporaryDirectory(prefix="vocalize-update-") as tmp:
         extract_root = Path(tmp)
-        with zipfile.ZipFile(args.artifact) as archive:
-            archive.extractall(extract_root)
+        _extract_release_zip(args.artifact, extract_root)
         bundle = _single_extracted_bundle(extract_root)
         _copy_update_payload(bundle, paths.root)
     print(f"Updated: {paths.root}")
@@ -385,6 +385,32 @@ def _single_extracted_bundle(extract_root: Path) -> Path:
     return bundles[0]
 
 
+def _extract_release_zip(artifact: Path, extract_root: Path) -> None:
+    """Extract a release zip while preserving symlinks and executable bits."""
+    with zipfile.ZipFile(artifact) as archive:
+        for member in archive.infolist():
+            if member.filename.endswith("/"):
+                (extract_root / member.filename).mkdir(parents=True, exist_ok=True)
+                continue
+            target = extract_root / member.filename
+            resolved = target.resolve(strict=False)
+            if not resolved.is_relative_to(extract_root.resolve()):
+                raise RuntimeError(f"unsafe path in release artifact: {member.filename}")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            mode = member.external_attr >> 16
+            if stat.S_ISLNK(mode):
+                link_target = archive.read(member).decode("utf-8")
+                if target.exists() or target.is_symlink():
+                    target.unlink()
+                os.symlink(link_target, target)
+                continue
+            with archive.open(member) as source, target.open("wb") as destination:
+                shutil.copyfileobj(source, destination)
+            permissions = mode & 0o777
+            if permissions:
+                target.chmod(permissions)
+
+
 def _copy_update_payload(bundle: Path, install_root: Path) -> None:
     preserve = {"config", "logs", "cache"}
     for child in bundle.iterdir():
@@ -395,7 +421,9 @@ def _copy_update_payload(bundle: Path, install_root: Path) -> None:
             shutil.rmtree(destination)
         elif destination.exists() or destination.is_symlink():
             destination.unlink()
-        if child.is_dir():
+        if child.is_symlink():
+            os.symlink(os.readlink(child), destination)
+        elif child.is_dir():
             shutil.copytree(child, destination, symlinks=True)
         else:
             shutil.copy2(child, destination)

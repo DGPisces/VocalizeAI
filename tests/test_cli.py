@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import json
 import os
+import stat
 import sys
 import types
+import zipfile
 from pathlib import Path
 
 from vocalize.cli import main
@@ -182,6 +184,9 @@ def test_cli_update_preserves_config_logs_and_cache(monkeypatch, tmp_path) -> No
     (bundle / "cache").mkdir()
     (bundle / "VERSION").write_text("0.1.1\n")
     (bundle / "vocalize").write_text("#!/bin/sh\n")
+    (bundle / "vocalize").chmod(0o755)
+    (bundle / "target").write_text("target\n")
+    os.symlink("target", bundle / "link")
     _zip_dir(bundle, artifact)
 
     monkeypatch.setenv("VOCALIZE_INSTALL_ROOT", str(install_root))
@@ -191,6 +196,9 @@ def test_cli_update_preserves_config_logs_and_cache(monkeypatch, tmp_path) -> No
     assert (install_root / "VERSION").read_text(encoding="utf-8") == "0.1.1\n"
     assert (install_root / "config" / ".env").read_text() == "OPENAI_API_KEY=old\n"
     assert (install_root / "logs" / "vocalize.log").read_text() == "old log\n"
+    assert os.access(install_root / "vocalize", os.X_OK)
+    assert (install_root / "link").is_symlink()
+    assert os.readlink(install_root / "link") == "target"
 
 
 def test_cli_start_foreground_applies_install_env(monkeypatch, tmp_path) -> None:
@@ -215,8 +223,12 @@ def test_cli_start_foreground_applies_install_env(monkeypatch, tmp_path) -> None
 
 
 def _zip_dir(source: Path, destination: Path) -> None:
-    import zipfile
-
     with zipfile.ZipFile(destination, "w") as archive:
         for path in source.rglob("*"):
-            archive.write(path, path.relative_to(source.parent))
+            arcname = path.relative_to(source.parent).as_posix()
+            if path.is_symlink():
+                info = zipfile.ZipInfo(arcname)
+                info.external_attr = (stat.S_IFLNK | 0o755) << 16
+                archive.writestr(info, os.readlink(path))
+            else:
+                archive.write(path, arcname)
