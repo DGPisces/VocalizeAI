@@ -33,6 +33,12 @@
   --warn-soft: rgba(245, 158, 11, 0.12);
   --bad: #dc2626;
   --bad-soft: rgba(220, 38, 38, 0.10);
+  --readiness-bg: linear-gradient(180deg, #ffffff 0%, #f4f9ff 100%);
+  --assistant-row-bg: #eef6ff;
+  --assistant-row-border: rgba(37, 99, 235, 0.22);
+  --button-strong-bg: #102a43;
+  --button-strong-border: #102a43;
+  --button-strong-text: #ffffff;
   --radius: 8px;
   --radius-sm: 8px;
   --shadow: 0 14px 34px rgba(25, 70, 125, 0.08);
@@ -40,6 +46,76 @@
   --shadow-md: 0 18px 42px rgba(25, 70, 125, 0.12);
   --shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.18);
   --fs-h1: clamp(24px, 4vw, 40px);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #080d17;
+  --surface: #111827;
+  --surface-2: #172033;
+  --text: #f4f8ff;
+  --text-soft: #a5b4c9;
+  --border: rgba(190, 214, 255, 0.10);
+  --border-solid: rgba(190, 214, 255, 0.20);
+  --card-border: rgba(190, 214, 255, 0.14);
+  --nav-bg: rgba(8, 13, 23, 0.88);
+  --accent: #60a5fa;
+  --accent-soft: rgba(96, 165, 250, 0.16);
+  --accent-text: #93c5fd;
+  --good: #34d399;
+  --good-text: #86efac;
+  --good-soft: rgba(52, 211, 153, 0.14);
+  --warn: #fbbf24;
+  --warn-text: #fde68a;
+  --warn-soft: rgba(251, 191, 36, 0.14);
+  --bad: #f87171;
+  --bad-soft: rgba(248, 113, 113, 0.14);
+  --readiness-bg: linear-gradient(180deg, #111827 0%, #141f32 100%);
+  --assistant-row-bg: rgba(96, 165, 250, 0.14);
+  --assistant-row-border: rgba(96, 165, 250, 0.26);
+  --button-strong-bg: #dbeafe;
+  --button-strong-border: #dbeafe;
+  --button-strong-text: #0f172a;
+  --shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+  --shadow-sm: 0 10px 24px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 22px 54px rgba(0, 0, 0, 0.40);
+  --shadow-focus: 0 0 0 3px rgba(96, 165, 250, 0.30);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    color-scheme: dark;
+    --bg: #080d17;
+    --surface: #111827;
+    --surface-2: #172033;
+    --text: #f4f8ff;
+    --text-soft: #a5b4c9;
+    --border: rgba(190, 214, 255, 0.10);
+    --border-solid: rgba(190, 214, 255, 0.20);
+    --card-border: rgba(190, 214, 255, 0.14);
+    --nav-bg: rgba(8, 13, 23, 0.88);
+    --accent: #60a5fa;
+    --accent-soft: rgba(96, 165, 250, 0.16);
+    --accent-text: #93c5fd;
+    --good: #34d399;
+    --good-text: #86efac;
+    --good-soft: rgba(52, 211, 153, 0.14);
+    --warn: #fbbf24;
+    --warn-text: #fde68a;
+    --warn-soft: rgba(251, 191, 36, 0.14);
+    --bad: #f87171;
+    --bad-soft: rgba(248, 113, 113, 0.14);
+    --readiness-bg: linear-gradient(180deg, #111827 0%, #141f32 100%);
+    --assistant-row-bg: rgba(96, 165, 250, 0.14);
+    --assistant-row-border: rgba(96, 165, 250, 0.26);
+    --button-strong-bg: #dbeafe;
+    --button-strong-border: #dbeafe;
+    --button-strong-text: #0f172a;
+    --shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+    --shadow-sm: 0 10px 24px rgba(0, 0, 0, 0.24);
+    --shadow-md: 0 22px 54px rgba(0, 0, 0, 0.40);
+    --shadow-focus: 0 0 0 3px rgba(96, 165, 250, 0.30);
+  }
 }
 
 * {
@@ -413,9 +489,9 @@ textarea {
 }
 
 .focused-button--dark {
-  border-color: #102a43;
-  background: #102a43;
-  color: #ffffff;
+  border-color: var(--button-strong-border);
+  background: var(--button-strong-bg);
+  color: var(--button-strong-text);
 }
 
 .focused-button--ghost {
@@ -483,7 +559,7 @@ textarea {
   display: grid;
   align-content: space-between;
   gap: var(--space-4);
-  background: linear-gradient(180deg, #ffffff 0%, #f4f9ff 100%);
+  background: var(--readiness-bg);
 }
 
 .focused-readiness p,
@@ -818,8 +894,8 @@ textarea {
 }
 
 .preview-transcript-row--assistant {
-  border-color: rgba(37, 99, 235, 0.22);
-  background: #eef6ff;
+  border-color: var(--assistant-row-border);
+  background: var(--assistant-row-bg);
 }
 
 .preview-clarification {
@@ -956,9 +1032,21 @@ textarea {
     width: 100%;
   }
 
+  .focused-header__actions .focused-button {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
   .focused-icon-button {
     width: 42px;
     min-height: 42px;
+  }
+}
+
+@media (max-width: 420px) {
+  .focused-brand strong,
+  .focused-brand small {
+    display: none;
   }
 }
 
