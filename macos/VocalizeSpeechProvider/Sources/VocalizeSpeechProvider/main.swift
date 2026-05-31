@@ -91,6 +91,16 @@ final class ProviderState {
         )
     }
 
+    func requestPermissions() async -> ProviderCapabilities.Permissions {
+        if SFSpeechRecognizer.authorizationStatus() == .notDetermined {
+            _ = await requestSpeechAuthorization()
+        }
+        if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
+            _ = await requestMicrophoneAuthorization()
+        }
+        return capabilities().permissions
+    }
+
     func sendJSON(_ ws: WebSocket, _ value: [String: Any]) {
         guard JSONSerialization.isValidJSONObject(value),
               let data = try? JSONSerialization.data(withJSONObject: value)
@@ -102,6 +112,22 @@ final class ProviderState {
 
     func sendBinary(_ ws: WebSocket, _ bytes: [UInt8]) {
         ws.send(raw: Data(bytes), opcode: .binary)
+    }
+}
+
+func requestSpeechAuthorization() async -> SFSpeechRecognizerAuthorizationStatus {
+    await withCheckedContinuation { continuation in
+        SFSpeechRecognizer.requestAuthorization { status in
+            continuation.resume(returning: status)
+        }
+    }
+}
+
+func requestMicrophoneAuthorization() async -> AVAuthorizationStatus {
+    await withCheckedContinuation { continuation in
+        AVCaptureDevice.requestAccess(for: .audio) { _ in
+            continuation.resume(returning: AVCaptureDevice.authorizationStatus(for: .audio))
+        }
     }
 }
 
@@ -514,6 +540,10 @@ app.http.server.configuration.port = port
 
 app.get("v1", "capabilities") { _ in
     state.capabilities()
+}
+
+app.post("v1", "permissions", "request") { _ async in
+    await state.requestPermissions()
 }
 
 app.webSocket("v1", "stt", "stream") { _, ws in

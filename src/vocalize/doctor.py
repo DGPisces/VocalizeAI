@@ -16,6 +16,7 @@ from openai import AsyncOpenAI
 
 from vocalize.config import Config
 from vocalize.install_state import INSTALL_MARKER
+from vocalize.llm.openai_compat import _server_disable_thinking
 from vocalize.provider_runtime import ensure_speech_provider_started
 
 
@@ -116,17 +117,20 @@ async def _run_llm_full_agent_probe(cfg: Config) -> str:
         timeout=20.0,
         max_retries=0,
     )
-    json_stream = await client.chat.completions.create(
-        model=cfg.openai_model,
-        messages=[
+    json_kwargs: dict[str, Any] = {
+        "model": cfg.openai_model,
+        "messages": [
             {
                 "role": "user",
                 "content": 'Return only this JSON object: {"ok": true}',
             }
         ],
-        response_format={"type": "json_object"},
-        stream=True,
-    )
+        "response_format": {"type": "json_object"},
+        "stream": True,
+    }
+    if _server_disable_thinking(cfg.openai_model):
+        json_kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
+    json_stream = await client.chat.completions.create(**json_kwargs)
     json_text = ""
     async for chunk in json_stream:
         if not chunk.choices:
@@ -138,15 +142,15 @@ async def _run_llm_full_agent_probe(cfg: Config) -> str:
     if parsed.get("ok") is not True:
         raise RuntimeError("schema adherence probe returned unexpected JSON")
 
-    tool_stream = await client.chat.completions.create(
-        model=cfg.openai_model,
-        messages=[
+    tool_kwargs: dict[str, Any] = {
+        "model": cfg.openai_model,
+        "messages": [
             {
                 "role": "user",
                 "content": "Call the readiness tool with ok=true.",
             }
         ],
-        tools=[
+        "tools": [
             {
                 "type": "function",
                 "function": {
@@ -160,12 +164,15 @@ async def _run_llm_full_agent_probe(cfg: Config) -> str:
                 },
             }
         ],
-        tool_choice={
+        "tool_choice": {
             "type": "function",
             "function": {"name": "report_readiness"},
         },
-        stream=True,
-    )
+        "stream": True,
+    }
+    if _server_disable_thinking(cfg.openai_model):
+        tool_kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
+    tool_stream = await client.chat.completions.create(**tool_kwargs)
     saw_tool_call = False
     async for chunk in tool_stream:
         if not chunk.choices:
@@ -200,8 +207,17 @@ def _check_speech_provider(cfg: Config) -> DoctorCheck:
     process = None
     try:
         process = ensure_speech_provider_started(cfg)
-        with urllib.request.urlopen(url, timeout=cfg.provider_connect_timeout_s) as resp:
-            body = json.loads(resp.read().decode("utf-8"))
+        body = _read_provider_capabilities(url, timeout_s=cfg.provider_connect_timeout_s)
+        speech_status, mic_status, voices = _extract_permission_summary(body)
+        if speech_status == "not_determined" or mic_status == "not_determined":
+            _request_provider_permissions(
+                cfg.stt_provider_url,
+                timeout_s=max(cfg.provider_connect_timeout_s, 30.0),
+            )
+            body = _read_provider_capabilities(
+                url,
+                timeout_s=cfg.provider_connect_timeout_s,
+            )
     except (
         OSError,
         RuntimeError,
@@ -219,27 +235,13 @@ def _check_speech_provider(cfg: Config) -> DoctorCheck:
         if process is not None:
             process.terminate()
 
-    permissions = body.get("permissions") if isinstance(body, dict) else None
-    speech_status = ""
-    voices = 0
-    if isinstance(permissions, dict):
-        speech_status = str(
-            permissions.get("speech_recognition")
-            or permissions.get("speechRecognition")
-            or ""
-        )
-        try:
-            voices = int(
-                permissions.get("tts_voices_available")
-                or permissions.get("ttsVoicesAvailable")
-                or 0
-            )
-        except (TypeError, ValueError):
-            voices = 0
+    speech_status, mic_status, voices = _extract_permission_summary(body)
 
     problems: list[str] = []
     if speech_status not in {"authorized", ""}:
         problems.append(f"speech permission is {speech_status}")
+    if mic_status not in {"authorized", ""}:
+        problems.append(f"microphone permission is {mic_status}")
     if voices <= 0:
         problems.append("no TTS voices available")
 
@@ -257,3 +259,51 @@ def _capabilities_url(base_url: str) -> str:
     parsed = urlparse(base_url)
     scheme = {"ws": "http", "wss": "https"}.get(parsed.scheme, parsed.scheme)
     return f"{scheme}://{parsed.netloc}/v1/capabilities"
+
+
+def _permissions_request_url(base_url: str) -> str:
+    parsed = urlparse(base_url)
+    scheme = {"ws": "http", "wss": "https"}.get(parsed.scheme, parsed.scheme)
+    return f"{scheme}://{parsed.netloc}/v1/permissions/request"
+
+
+def _read_provider_capabilities(url: str, *, timeout_s: float) -> dict[str, Any]:
+    with urllib.request.urlopen(url, timeout=timeout_s) as resp:
+        body = json.loads(resp.read().decode("utf-8"))
+    if not isinstance(body, dict):
+        raise json.JSONDecodeError("provider capabilities must be an object", "", 0)
+    return body
+
+
+def _request_provider_permissions(base_url: str, *, timeout_s: float) -> None:
+    request = urllib.request.Request(
+        _permissions_request_url(base_url),
+        data=b"{}",
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(request, timeout=timeout_s) as resp:
+        resp.read()
+
+
+def _extract_permission_summary(body: dict[str, Any]) -> tuple[str, str, int]:
+    permissions = body.get("permissions")
+    speech_status = ""
+    mic_status = ""
+    voices = 0
+    if isinstance(permissions, dict):
+        speech_status = str(
+            permissions.get("speech_recognition")
+            or permissions.get("speechRecognition")
+            or ""
+        )
+        mic_status = str(permissions.get("microphone") or "")
+        try:
+            voices = int(
+                permissions.get("tts_voices_available")
+                or permissions.get("ttsVoicesAvailable")
+                or 0
+            )
+        except (TypeError, ValueError):
+            voices = 0
+    return speech_status, mic_status, voices

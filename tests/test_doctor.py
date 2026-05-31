@@ -22,6 +22,7 @@ class _Response:
                 "providerApiVersion": "1.0",
                 "permissions": {
                     "speech_recognition": "authorized",
+                    "microphone": "authorized",
                     "tts_voices_available": 5,
                 },
             }
@@ -63,6 +64,7 @@ def test_doctor_fails_for_missing_llm_and_speech_permission(monkeypatch) -> None
                 {
                     "permissions": {
                         "speech_recognition": "denied",
+                        "microphone": "denied",
                         "tts_voices_available": 0,
                     }
                 }
@@ -78,6 +80,56 @@ def test_doctor_fails_for_missing_llm_and_speech_permission(monkeypatch) -> None
     assert by_name["llm_config"].ok is False
     assert by_name["speech_provider"].ok is False
     assert "speech permission is denied" in by_name["speech_provider"].detail
+    assert "microphone permission is denied" in by_name["speech_provider"].detail
+
+
+def test_doctor_requests_not_determined_speech_permissions(monkeypatch) -> None:
+    calls: list[str] = []
+
+    class _NotDeterminedResponse(_Response):
+        def read(self) -> bytes:
+            return json.dumps(
+                {
+                    "permissions": {
+                        "speech_recognition": "not_determined",
+                        "microphone": "not_determined",
+                        "tts_voices_available": 5,
+                    }
+                }
+            ).encode("utf-8")
+
+    def fake_urlopen(request, timeout: float):
+        url = getattr(request, "full_url", request)
+        calls.append(str(url))
+        if str(url).endswith("/v1/permissions/request"):
+            return _Response()
+        return _NotDeterminedResponse() if len(calls) == 1 else _Response()
+
+    monkeypatch.setattr("platform.system", lambda: "Darwin")
+    monkeypatch.setattr("platform.platform", lambda: "macOS-26.5-arm64")
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    checks = run_doctor(
+        Config(
+            openai_api_key="sk-test",
+            openai_model="test-model",
+            stt_provider_url="http://127.0.0.1:8766",
+        ),
+        skip_llm_probe=True,
+    )
+
+    assert all(check.ok for check in checks)
+    assert calls == [
+        "http://127.0.0.1:8766/v1/capabilities",
+        "http://127.0.0.1:8766/v1/permissions/request",
+        "http://127.0.0.1:8766/v1/capabilities",
+    ]
+
+
+def test_deepseek_v4_doctor_probe_disables_thinking(monkeypatch) -> None:
+    from vocalize import doctor
+
+    assert doctor._server_disable_thinking("deepseek-v4-flash") is True
 
 
 def test_doctor_validates_packaged_install_layout(monkeypatch, tmp_path) -> None:
