@@ -1,7 +1,7 @@
 """dialogue.user_channel — 抽象用户接入通道（mid-call clarification 路径用）。
 
 Phase 4 only ships ``LocalMicUserChannel``（消费 ``MicrophoneTransport``
-+ ``SenseVoiceClient`` + ``CosyVoiceClient``，对应 demos/phase4_three_party_local.py
++ Provider API STT/TTS clients，对应本地 Mac speech helper 或用户自定义 provider
 里的 ``--user-mic-device`` 链路）。Phase 5.5 会再补一个 ``WebSocketUserChannel``
 让前端浏览器接入；两者满足同一 ``UserChannel`` Protocol，所以编排器
 （Plan 04-08 clarification + Plan 04-09 orchestrator）的代码无须根据 transport

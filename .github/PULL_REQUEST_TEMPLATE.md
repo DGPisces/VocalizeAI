@@ -21,5 +21,7 @@ Closes #...
 - [ ] Code follows project style (ruff and mypy clean for Python; tsc clean for TypeScript)
 - [ ] Tests added or updated to cover the change
 - [ ] CI is green (or failures are pre-existing and documented)
+- [ ] Public tree audit is green for release-facing changes
+- [ ] DGPisces maintainer review is requested and required before merge
 - [ ] Commit messages follow the `feat/fix/docs/chore/test/refactor(<area>): <verb> <noun>` convention (see CONTRIBUTING.md)
 - [ ] No secrets, internal hostnames, real API keys, or real tunnel names in the diff

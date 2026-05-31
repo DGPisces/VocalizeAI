@@ -39,13 +39,13 @@ from vocalize.transports.base import AudioEncoding
 
 log = logging.getLogger(__name__)
 
-# SenseVoice 服务端硬编码 16 kHz mono PCM int16；这里跟它对齐。
+# Provider API 输入默认使用 16 kHz mono PCM int16。
 DEFAULT_SAMPLE_RATE = 16_000
 DEFAULT_CHANNELS = 1
 # 30 ms 帧 → 480 samples × 2 bytes = 960 bytes，常见 STT 流式块大小
 DEFAULT_BLOCK_SIZE = 480
 
-# CosyVoice2 默认 24 kHz mono PCM int16；输出端默认与之对齐。
+# Provider API 输出默认使用 24 kHz mono PCM int16。
 DEFAULT_OUTPUT_SAMPLE_RATE = 24_000
 # 20 ms 帧 @ 24kHz = 480 samples × 2 bytes = 960 bytes。块越小启动延迟越低，
 # 但 PortAudio underrun 风险越高；20 ms 是常见 voice agent 折中。
@@ -59,11 +59,11 @@ class MicrophoneTransport:
 
     Args:
         device: ``sounddevice`` 输入设备名或索引；``None`` = 系统默认输入。
-        sample_rate: 输入采样率，默认 16 kHz（与 SenseVoice 服务端约定一致）。
+        sample_rate: 输入采样率，默认 16 kHz（Provider API 默认输入格式）。
         block_size: 输入回调每次返回的样本数；30 ms @ 16 kHz = 480。
         queue_maxsize: 输入 queue 容量；满了会丢最老帧并告警（避免无界增长）。
         output_device: ``sounddevice`` 输出设备名或索引；``None`` = 系统默认输出。
-        output_sample_rate: 输出采样率，默认 24 kHz（与 CosyVoice2 服务端约定一致）。
+        output_sample_rate: 输出采样率，默认 24 kHz（Provider API 默认输出格式）。
         output_block_size: 输出回调每次消费的样本数；20 ms @ 24 kHz = 480。
             块越小启动延迟越低，但 PortAudio underrun 风险越高。
         output_queue_maxsize: 输出 queue 容量；默认 200（约 2 秒缓冲 @ 20ms 块）。
@@ -139,7 +139,7 @@ class MicrophoneTransport:
         # State machine: NOTTRIGGERED → (≥9 voiced in last 10) → TRIGGERED →
         #                (≥9 unvoiced in last 10) → NOTTRIGGERED + fire _on_eos.
         # ``_on_eos`` is None at construct time so the input_stream consumer
-        # is born tolerant of late registration (the SenseVoiceClient hooks it
+        # is born tolerant of late registration (the STT provider hooks it
         # up at the start of stream_transcribe, BEFORE iterating input_stream;
         # the guard `if self._on_eos is not None` is a defensive backstop).
         self._vad = webrtcvad.Vad(mode=2)
@@ -243,7 +243,7 @@ class MicrophoneTransport:
                     # 9-of-10 unvoiced → user stopped speaking. Stamp wall-
                     # clock for pipeline.TurnTiming.last_speech_end_real
                     # (closes the 11s instrumentation gap), invoke _on_eos
-                    # callback if registered (SenseVoiceClient sends
+                    # callback if registered (the STT provider sends
                     # {"event": "end_of_utterance"} over WS), reset.
                     if sum(1 for b in self._vad_buffer if not b) >= 9:
                         self._vad_state = "NOTTRIGGERED"
@@ -329,7 +329,7 @@ class MicrophoneTransport:
                     outdata[:got] = leftover[:]
                     # Same check on partial-leftover writes — even underruns
                     # can carry the first audible sample if leftover is short
-                    # but non-zero (e.g. CosyVoice emitted 200 bytes total).
+                    # but non-zero (e.g. provider emitted 200 bytes total).
                     wrote_audio = any(leftover[:got])
                     leftover.clear()
                 outdata[got:need] = b"\x00" * (need - got)

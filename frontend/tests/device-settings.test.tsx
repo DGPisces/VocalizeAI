@@ -4,18 +4,18 @@ import React from "react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { NextIntlClientProvider } from "next-intl";
+import { I18nProvider } from "@/src/i18n";
 import { DeviceSettings } from "../components/DeviceSettings";
 import zh from "../messages/zh.json";
 import en from "../messages/en.json";
 import type { DevicePreferences } from "../components/DeviceSettings";
 
 const wrap = (ui: React.ReactNode) => (
-  <NextIntlClientProvider locale="zh" messages={zh}>{ui}</NextIntlClientProvider>
+  <I18nProvider locale="zh" messages={zh}>{ui}</I18nProvider>
 );
 
 const wrapEn = (ui: React.ReactNode) => (
-  <NextIntlClientProvider locale="en" messages={en}>{ui}</NextIntlClientProvider>
+  <I18nProvider locale="en" messages={en}>{ui}</I18nProvider>
 );
 
 const mockDevices: MediaDeviceInfo[] = [

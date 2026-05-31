@@ -7,7 +7,7 @@
  *
  * Requires:
  *   - Backend:  VOCALIZE_DEBUG=1 uvicorn vocalize.main:app --port 8000
- *   - Frontend: NEXT_PUBLIC_VOCALIZE_API_BASE_URL=http://127.0.0.1:8000 npm run dev --port 3000
+ *   - Frontend: VITE_VOCALIZE_API_BASE_URL=http://127.0.0.1:8000 npm run dev -- --port 3000
  *
  * Backend debug knob:
  *   When VOCALIZE_DEBUG=1 is set, the backend accepts a query parameter

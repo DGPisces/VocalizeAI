@@ -7,12 +7,16 @@ that need a fresh app per case can call it directly with a custom
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from prometheus_fastapi_instrumentator import Instrumentator
 
-from vocalize.server.health import make_default_gpu_probe, register_health_routes
+from vocalize.server.health import make_default_speech_provider_probe, register_health_routes
 from vocalize.server.metrics import install_error_counter, refresh_runtime_gauges
 from vocalize.server.runner import DialogueOrchestratorRunner
 from vocalize.server.sessions import register_session_routes
@@ -34,21 +38,72 @@ def _default_user_pipeline_factory(transport):
     from vocalize.config import get_config
     from vocalize.llm.openai_compat import OpenAICompatClient
     from vocalize.pipeline import VoicePipeline
-    from vocalize.stt.sensevoice import SenseVoiceClient
-    from vocalize.tts.cosyvoice import CosyVoiceClient
+    from vocalize.providers import ProviderSTTClient, ProviderTTSClient
 
     config = get_config()
     return VoicePipeline(
         transport=transport,
         system_prompt="",
-        stt=SenseVoiceClient.from_app_config(config),
+        stt=ProviderSTTClient.from_app_config(config),
         llm=OpenAICompatClient.from_app_config(config),
-        tts=CosyVoiceClient.from_app_config(config),
+        tts=ProviderTTSClient.from_app_config(config),
     )
 
 
 _DEFAULT_PROD_ORIGINS: list[str] = []
 _DEFAULT_DEV_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"]
+_RESERVED_FRONTEND_FALLBACK_SEGMENTS = {
+    "api",
+    "ws",
+    "health",
+    "metrics",
+    "docs",
+    "redoc",
+    "openapi.json",
+}
+
+
+def _frontend_dist_dir() -> Path:
+    raw = os.getenv("VOCALIZE_FRONTEND_DIST")
+    if raw:
+        return Path(raw).expanduser()
+    from vocalize.runtime_paths import bundled_frontend_dist
+
+    bundled = bundled_frontend_dist()
+    if bundled is not None:
+        return bundled
+    return Path(__file__).resolve().parents[3] / "frontend" / "dist"
+
+
+def register_frontend_routes(app: FastAPI) -> None:
+    """Serve the built Vite console when ``frontend/dist`` is present."""
+    dist_dir = _frontend_dist_dir()
+    index_file = dist_dir / "index.html"
+    if not index_file.is_file():
+        return
+
+    assets_dir = dist_dir / "assets"
+    if assets_dir.is_dir():
+        app.mount(
+            "/assets",
+            StaticFiles(directory=assets_dir),
+            name="frontend-assets",
+        )
+
+    @app.get("/", include_in_schema=False)
+    async def _frontend_index() -> FileResponse:
+        return FileResponse(index_file)
+
+    @app.get("/{path:path}", include_in_schema=False)
+    async def _frontend_spa(path: str) -> FileResponse:
+        first_segment = path.split("/", 1)[0]
+        if first_segment in _RESERVED_FRONTEND_FALLBACK_SEGMENTS:
+            raise HTTPException(status_code=404)
+
+        requested_file = dist_dir / path
+        if requested_file.is_file():
+            return FileResponse(requested_file)
+        return FileResponse(index_file)
 
 
 def create_app() -> FastAPI:
@@ -64,9 +119,17 @@ def create_app() -> FastAPI:
             Raises RuntimeError at startup when absent in non-localhost mode
             (closes Host-header spoofing vector D-11 — see CONCERNS.md).
             In localhost-dev mode the WS URL is derived from the request base_url.
-        GPU_HOST / SENSEVOICE_WS_PORT / COSYVOICE_WS_PORT — GPU service targets.
+        VOCALIZE_STT_PROVIDER_URL / VOCALIZE_TTS_PROVIDER_URL — Provider API
+            endpoints for speech recognition and speech synthesis.
     """
-    app = FastAPI(title="VocalizeAI", version="0.1.0")
+    @asynccontextmanager
+    async def _lifespan(app: FastAPI):
+        yield
+        process = getattr(app.state, "speech_provider_process", None)
+        if process is not None:
+            process.terminate()
+
+    app = FastAPI(title="VocalizeAI", version="0.1.0", lifespan=_lifespan)
 
     # --- Prometheus metrics (/metrics endpoint) ---
     # Mount BEFORE CORS middleware so the instrumentator middleware sees all
@@ -127,8 +190,15 @@ def create_app() -> FastAPI:
             "Example: wss://api.example.com"
         )
 
+    from vocalize.config import get_config
+    from vocalize.provider_runtime import ensure_speech_provider_started
+
+    config = get_config()
+    speech_provider_process = ensure_speech_provider_started(config)
+    app.state.speech_provider_process = speech_provider_process
+
     register_session_routes(app, registry=registry)
-    register_health_routes(app, gpu_probe=make_default_gpu_probe())
+    register_health_routes(app, provider_probe=make_default_speech_provider_probe())
     register_ws_routes(
         app,
         registry=registry,
@@ -138,7 +208,8 @@ def create_app() -> FastAPI:
             merchant_pipeline_factory=_default_user_pipeline_factory,
         ),
     )
+    register_frontend_routes(app)
     return app
 
 
-__all__ = ["create_app"]
+__all__ = ["create_app", "register_frontend_routes"]

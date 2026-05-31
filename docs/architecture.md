@@ -22,9 +22,9 @@ in-call dialogue, speaking to the merchant (in the merchant's language if needed
 and transcribing both sides. If clarification is needed mid-call, Layer 4 pauses
 the call and asks the user; Layer 5 (relay) handles all cross-lingual translation.
 
-This is the v1.x audio-bridge model. The system does not use a telephony
-provider (no Twilio) — the iPhone's speakerphone is the physical bridge between
-the AI audio pipeline and the PSTN call.
+The public `v0.1.0` product is packaged for macOS. It does not use a telephony
+provider; the user's phone remains the physical bridge to the call, while the
+Mac runs the web console, backend, LLM client, and native speech helper.
 
 ### End-to-End Request Flow (Quick Reference)
 
@@ -51,7 +51,7 @@ See: `src/vocalize/pipeline.py`, `src/vocalize/transports/`
 
 ```mermaid
 flowchart LR
-    UserBrowser["User Browser\n(Next.js console)"]
+    UserBrowser["User Browser\n(Vite console)"]
     AudioBridge["Frontend Audio Bridge\n(BrowserAudioBridge)"]
     iPhoneSpeaker["iPhone Speakerphone\n(merchant audio in/out)"]
     FastAPI["FastAPI Orchestrator\n(/api/sessions, /ws/sessions)"]
@@ -62,8 +62,8 @@ flowchart LR
     L4["Layer 4\nclarification"]
     L5["Layer 5\nrelay"]
     LLM["LLM Service\n(OpenAI-compatible)"]
-    STT["STT Service\n(SenseVoice, GPU)"]
-    TTS["TTS Service\n(CosyVoice, GPU)"]
+    STT["STT Provider\n(macOS native by default)"]
+    TTS["TTS Provider\n(macOS native by default)"]
     Merchant["Merchant Phone\n(PSTN)"]
 
     UserBrowser -- "text + voice (WS binary)" --> AudioBridge
@@ -75,8 +75,8 @@ flowchart LR
     L3 & L4 -- "audio pipeline" --> TTS
     AudioBridge -- "speakerphone bridge" --> iPhoneSpeaker
     iPhoneSpeaker <-- "PSTN call" --> Merchant
-    STT -- "WS (Tailscale)" --> Orchestrator
-    TTS -- "WS (Tailscale)" --> Orchestrator
+    STT -- "Provider API" --> Orchestrator
+    TTS -- "Provider API" --> Orchestrator
 ```
 
 ---
@@ -446,16 +446,15 @@ No auth required.
 
 **Response:**
 ```json
-{ "ok": true, "gpu_reachable": true }
+{ "ok": true, "speech_provider_reachable": true }
 ```
 
 - `ok` is always `true` when the server is reachable.
-- `gpu_reachable` is the result of TCP probes against `GPU_HOST:SENSEVOICE_WS_PORT`
-  and `GPU_HOST:COSYVOICE_WS_PORT` (1.5 s timeout each). Returns `false` if
-  `GPU_HOST` is unset or either probe fails.
+- `speech_provider_reachable` reports whether the configured STT/TTS Provider API
+  endpoint responds to a lightweight probe.
 
-**Note:** `GET /health` is the single health surface and already covers GPU
-reachability via the TCP probe. There is no deeper health variant endpoint.
+**Note:** `GET /health` is the single health surface and already covers Provider
+API reachability. There is no deeper health variant endpoint.
 
 See: `src/vocalize/server/health.py`
 
@@ -481,6 +480,8 @@ speakerphone).
 OpenAI-compatible HTTP API. Default provider is DeepSeek (`OPENAI_BASE_URL=https://api.deepseek.com/v1`,
 `OPENAI_MODEL=deepseek-chat`). Any OpenAI-compatible endpoint works (OpenAI,
 Qwen, local Ollama, etc.) by setting `OPENAI_BASE_URL` and `OPENAI_MODEL`.
+`OPENAI_THINKING_MODE=disabled` requests non-thinking output; `enabled` leaves
+thinking behavior to the selected model/provider.
 
 The `openai` Python SDK is used with streaming enabled; tool-calling is used for
 slot assessment in Layer 1 and readiness assessment in preflight.
@@ -489,30 +490,30 @@ See: `src/vocalize/llm/`
 
 ---
 
-### STT — SenseVoice
+### STT — Provider API
 
-SenseVoice runs as a persistent WebSocket server on the GPU host (default port
-8000). The orchestrator opens a streaming STT connection per session and pipes
-PCM audio frames to it, receiving transcript chunks in real-time.
+The orchestrator opens a streaming STT Provider API connection per session and
+pipes PCM audio frames to it, receiving transcript chunks in real time. The
+Mac-first public setup uses the local macOS native helper by default.
 
-Connection target: `ws://{GPU_HOST}:{SENSEVOICE_WS_PORT}`
+Connection target: `{VOCALIZE_STT_PROVIDER_URL}/v1/stt/stream`
 
-See: `src/vocalize/stt/`
+See: `src/vocalize/providers/`, `docs/provider-api.md`
 
 ---
 
-### TTS — CosyVoice
+### TTS — Provider API
 
-CosyVoice runs as a persistent WebSocket server on the GPU host (default port
-8001). The orchestrator sends text to it and streams back PCM audio for playback
-via the browser audio bridge.
+The orchestrator sends text to the TTS Provider API and streams back PCM audio
+for playback via the browser audio bridge. The Mac-first public setup uses the
+local macOS native helper by default.
 
-Connection target: `ws://{GPU_HOST}:{COSYVOICE_WS_PORT}`
+Connection target: `{VOCALIZE_TTS_PROVIDER_URL}/v1/tts/stream`
 
-Voice cloning: the `preferred_voice_id` field in `CreateSessionRequest` selects
-a pre-registered voice profile; defaults to the system voice if unset.
+Voice selection is provider-defined. The public framework only requires the
+Provider API contract, not a specific model or platform.
 
-See: `src/vocalize/tts/`
+See: `src/vocalize/providers/`, `docs/provider-api.md`
 
 ---
 
@@ -555,9 +556,8 @@ See: `src/vocalize/server/ws.py`, `frontend/lib/audio*`, `frontend/components/Br
 | Post-call review | `src/vocalize/reflection/` |
 | Env/config loading | `src/vocalize/config.py` |
 | Asyncio main pipeline | `src/vocalize/pipeline.py` |
-| Frontend (Next.js 14) | `frontend/` |
-| Pi deployment assets | `infra/orchestrator/` |
-| GPU services setup | `infra/gpu-services/` |
+| Frontend (React + Vite) | `frontend/` |
+| macOS speech helper | `macos/VocalizeSpeechProvider/` |
 | Backend tests (pytest) | `tests/` |
 | Integration tests (Playwright) | `tests/integration/` |
 
@@ -570,13 +570,11 @@ API consumers and security researchers. VocalizeAI is a self-deploy
 project (no centrally hosted instance); report security-relevant findings
 via GitHub Issues — same channel as any other bug.
 
-### Authentication (D-08, retired)
+### Local-Only Default
 
-The original D-08 shared-invite-token gate has been removed; v1 ships no
-backend-level auth on `POST /api/sessions` or the WebSocket. Self-deploy
-operators are expected to restrict reachability at the network or proxy
-layer (Cloudflare Access, VPN, reverse-proxy auth, etc.). Per-user
-authentication is v1.x scope (requirement `AUTH-01`).
+The public product binds to `127.0.0.1` by default and is designed for a local
+macOS install. Operators who expose it beyond localhost must provide their own
+network boundary and configure the canonical WebSocket base URL.
 
 ### Task Length Bound (D-09)
 
@@ -587,8 +585,8 @@ the prompt-injection surface for Layer 1's LLM call.
 
 CORS is configured per `VOCALIZE_CORS_ORIGINS`. In non-localhost mode, it
 defaults to the configured production origin. `allow_methods` is restricted to
-`["GET", "POST", "DELETE"]`. The frontend calls FastAPI directly — no Next.js
-proxy layer sits between the browser and the backend.
+`["GET", "POST", "DELETE"]`. The frontend calls FastAPI directly. In production,
+FastAPI can also serve the built Vite bundle from `frontend/dist`.
 
 See: `src/vocalize/server/__init__.py`
 
@@ -610,6 +608,6 @@ See: `src/vocalize/server/ws.py`, `src/vocalize/server/sessions.py`
 
 ## Further Reading
 
-- **[docs/deploy/local.md](docs/deploy/local.md)** — Mac/Linux dev environment setup and env-var reference
-- **[docs/deploy/linux.md](docs/deploy/linux.md)** — End-to-end Pi production deployment runbook
+- **[docs/deploy/local.md](docs/deploy/local.md)** — local development setup and env-var reference
+- **[docs/provider-api.md](docs/provider-api.md)** — STT/TTS Provider API
 - **[CONTRIBUTING.md](../CONTRIBUTING.md)** — Contributor flow, code style, commit conventions

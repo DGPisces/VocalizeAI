@@ -49,7 +49,7 @@ body:
       label: "Environment"
       description: "Your setup details."
       placeholder: |
-        - OS: macOS 15 / Ubuntu 24.04 / Debian 12 / Raspberry Pi OS
+        - OS: macOS 15
         - Python version: 3.11.x
         - Node version: 20.x
         - Deployment mode: local dev / Linux-host production / other

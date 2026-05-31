@@ -1,10 +1,9 @@
 # Deploying VocalizeAI on a Linux Host
 
-This runbook covers end-to-end production deployment of VocalizeAI on any
-modern Linux host with systemd: the orchestrator runs on this host, GPU
-services (SenseVoice STT + CosyVoice TTS) run on a separate machine reachable
-over Tailscale, and a Cloudflare Tunnel fronts the orchestrator host to the
-public internet.
+This runbook covers end-to-end production deployment of the VocalizeAI backend
+on any modern Linux host with systemd. The orchestrator runs on this host, speech
+is accessed through the Provider API, and a Cloudflare Tunnel can front the
+service to the public internet.
 
 Tested on **Debian 12**, **Ubuntu 22.04 / 24.04**, and **Raspberry Pi OS
 (Bookworm)**. A Raspberry Pi was the original reference target — see
@@ -20,15 +19,8 @@ the BOM, OS imaging, and SSH bootstrap steps for that specific target.
 - Python 3.11 (installed by step 1 of `install/install.sh`).
 - Persistent internet connection (Cloudflare Tunnel requires outbound HTTPS).
 
-**GPU node (separate machine):**
-- NVIDIA RTX-class GPU (GTX 1080 or better; RTX 30/40 series recommended).
-- Windows + WSL2 or Linux (PyTorch 2.7.1+cu128).
-- Reachable from the orchestrator host over Tailscale on the configured
-  `GPU_HOST` IP/hostname.
-
 **Network:**
-- Tailscale account (free tier is sufficient) with both the orchestrator host
-  and the GPU node enrolled.
+- Optional private network/VPN if your speech provider is not on the same host.
 - Cloudflare account with a domain pointed at Cloudflare DNS (free tier is
   sufficient).
 
@@ -50,29 +42,17 @@ For the Raspberry Pi-specific imaging / first-boot steps, see
 
 ---
 
-## Tailscale Setup
+## Speech Provider Network
 
-Tailscale provides the encrypted overlay network between the orchestrator
-host and the GPU node.
+The public Mac-first path expects a Provider API service for speech. On macOS,
+that is the native helper documented in [../macos-speech-provider.md](../macos-speech-provider.md).
+If your Linux backend talks to a provider on another machine, put both machines
+on a private network or VPN and set the Provider API URLs in `.env`.
 
 ```bash
-# Install Tailscale on the orchestrator host:
-curl -fsSL https://tailscale.com/install.sh | sh
-sudo tailscale up
-
-# Verify the GPU node is visible:
-tailscale status
-# You should see your GPU node listed with its Tailscale IP.
-
-# Test reachability (replace <tailscale-ip> with your GPU node's Tailscale IP):
-# nc -zv <tailscale-ip> 8000   # SenseVoice STT
-# nc -zv <tailscale-ip> 8001   # CosyVoice TTS
+# Example: provider on the same host
+curl -s http://127.0.0.1:8765/v1/capabilities
 ```
-
-Set `GPU_HOST` in `/opt/vocalize/.env` to the GPU node's Tailscale IP.
-
-If the GPU services are not yet running, use `install/install.sh --skip-gpu`
-to proceed with installation without the GPU-reachability check.
 
 ---
 
@@ -91,7 +71,6 @@ bash install/install.sh
 
 # Or run selectively:
 bash install/install.sh --steps "1,2,6"   # apt + venv + systemd only
-bash install/install.sh --skip-gpu         # skip GPU-reachability check in step 7
 bash install/install.sh --skip-tunnel      # skip step 5 (Cloudflare Tunnel info)
 ```
 
@@ -101,7 +80,7 @@ bash install/install.sh --skip-tunnel      # skip step 5 (Cloudflare Tunnel info
 |------|--------|
 | 1 | `apt-get install` python3.11 python3.11-venv python3-pip build-essential rsync |
 | 2 | Create `.venv` in `/opt/vocalize`, `pip install -e .` |
-| 3 | GPU services note (GPU lives on a separate host; no on-orchestrator install) |
+| 3 | Speech Provider API configuration note |
 | 4 | Tailscale presence check (warns if absent) |
 | 5 | Cloudflare Tunnel token-install instructions |
 | 6 | Copy `vocalize.service` to `/etc/systemd/system/`, copy `.env.template` to `/opt/vocalize/.env` if absent, `systemctl enable vocalize` |
@@ -119,16 +98,18 @@ After step 6 copies `.env.template` to `/opt/vocalize/.env`, edit it:
 sudo nano /opt/vocalize/.env
 ```
 
-**Full env-var reference** (17 keys from `.env.example`):
+**Full env-var reference**:
 
 | Key | Required? | Purpose |
 |-----|-----------|---------|
 | `OPENAI_API_KEY` | **yes** | LLM authentication (any OpenAI-compatible provider) |
 | `OPENAI_BASE_URL` | default ok | LLM endpoint; default `https://api.deepseek.com/v1` |
 | `OPENAI_MODEL` | default ok | Model name; default `deepseek-chat` |
-| `GPU_HOST` | yes (if using GPU) | STT/TTS host — Tailscale IP of your GPU node |
-| `SENSEVOICE_WS_PORT` | default ok | STT port; default `8000` |
-| `COSYVOICE_WS_PORT` | default ok | TTS port; default `8001` |
+| `OPENAI_THINKING_MODE` | default ok | `enabled` or `disabled`; default `disabled` for non-thinking LLM calls |
+| `VOCALIZE_STT_PROVIDER_URL` | default ok | STT Provider API base URL; macOS default is the local native helper |
+| `VOCALIZE_TTS_PROVIDER_URL` | default ok | TTS Provider API base URL; macOS default is the local native helper |
+| `VOCALIZE_SPEECH_PROVIDER_AUTO_START` | default ok | Set `1` to let the backend start the configured speech helper command |
+| `VOCALIZE_SPEECH_PROVIDER_COMMAND` | optional | Command used when auto-start is enabled |
 | `VOCALIZE_HOST` | default ok | uvicorn bind host; set to `0.0.0.0` for production |
 | `VOCALIZE_PORT` | default ok | uvicorn bind port; default `8080` |
 | `ORCHESTRATOR_LISTEN_PORT` | default ok | Orchestrator service port; default `8080` (legacy compatibility) |
@@ -136,8 +117,8 @@ sudo nano /opt/vocalize/.env
 | `VOCALIZE_CORS_ORIGINS` | default ok | Comma-separated allowed CORS origins; default auto-picked from VOCALIZE_HOST |
 | `DEFAULT_LANGUAGE` | default ok | `zh` or `en`; default `zh` |
 | `LOG_DIR` | default ok | Log directory; default `logs` |
-| `NEXT_PUBLIC_VOCALIZE_API_BASE_URL` | yes (for frontend) | Frontend API base URL; baked into JS bundle at build time |
-| `NEXT_PUBLIC_VOCALIZE_WS_BASE_URL` | optional | Frontend WS base; derived from API base if absent |
+| `VITE_VOCALIZE_API_BASE_URL` | yes (for frontend) | Frontend API base URL; baked into JS bundle at build time |
+| `VITE_VOCALIZE_WS_BASE_URL` | optional | Frontend WS base; derived from API base if absent |
 
 **Example production `.env` (use your own values for all `<...>` placeholders):**
 
@@ -145,13 +126,16 @@ sudo nano /opt/vocalize/.env
 OPENAI_API_KEY=<your-openai-compatible-api-key>
 OPENAI_BASE_URL=https://api.deepseek.com/v1
 OPENAI_MODEL=deepseek-chat
-GPU_HOST=<tailscale-ip-of-gpu-node>
-SENSEVOICE_WS_PORT=8000
-COSYVOICE_WS_PORT=8001
+OPENAI_THINKING_MODE=disabled
+VOCALIZE_STT_PROVIDER_URL=http://127.0.0.1:8765
+VOCALIZE_TTS_PROVIDER_URL=http://127.0.0.1:8765
+VOCALIZE_SPEECH_PROVIDER_AUTO_START=1
+VOCALIZE_SPEECH_PROVIDER_COMMAND=<path-to-speech-helper>
 VOCALIZE_HOST=0.0.0.0
 VOCALIZE_PORT=8080
 VOCALIZE_WS_BASE_URL=wss://api.<your-domain>
 VOCALIZE_CORS_ORIGINS=https://<your-domain>
+VITE_VOCALIZE_API_BASE_URL=https://api.<your-domain>
 ```
 
 ---
@@ -175,12 +159,10 @@ sudo cloudflared service install <TUNNEL_TOKEN>
 sudo systemctl status cloudflared
 ```
 
-The reference ingress shape for this project is documented in
-`infra/orchestrator/cloudflared-config.yml` (maps
-`vocalize-api.<your-tunnel-name>` → `http://localhost:8080` and
-`vocalize.<your-tunnel-name>` → `http://localhost:3000`). Configure
-the actual public hostname routing in the Cloudflare dashboard under
-your tunnel's Public Hostnames tab.
+The backend can serve the built Vite console from `frontend/dist`, so a simple
+deployment may route both API and UI traffic to the FastAPI process. Configure
+the actual public hostname routing in the Cloudflare dashboard under your
+tunnel's Public Hostnames tab.
 
 Use `<your-tunnel-name>` as the tunnel name — do not use another person's
 tunnel name; tunnels are account-specific.
@@ -293,16 +275,13 @@ sudo journalctl -u cloudflared -n 50
 Check the Cloudflare dashboard for connector status. Ensure the tunnel token
 matches the connector the dashboard expects.
 
-**GPU services unreachable (`gpu_reachable=false` in `/health`):**
+**Speech provider unreachable (`speech_provider_reachable=false` in `/health`):**
 ```bash
-# Confirm Tailscale is up and the GPU node is reachable:
-tailscale status
-
-# Test TCP connectivity to each GPU service port:
-nc -zv $GPU_HOST $SENSEVOICE_WS_PORT    # e.g. nc -zv 100.x.y.z 8000
-nc -zv $GPU_HOST $COSYVOICE_WS_PORT     # e.g. nc -zv 100.x.y.z 8001
+# Check Provider API capabilities:
+curl -s "$VOCALIZE_STT_PROVIDER_URL/v1/capabilities"
 ```
-Check that SenseVoice and CosyVoice are running on the GPU host.
+Check that the configured Provider API service is running and reachable from the
+backend host.
 
 **Orchestrator fails to start:**
 ```bash

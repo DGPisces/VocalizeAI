@@ -253,7 +253,7 @@ def build_app() -> FastAPI:
     )
     registry = SessionRegistry()
     register_session_routes(app, registry=registry)
-    register_health_routes(app, gpu_probe=lambda: asyncio.sleep(0, result=False))
+    register_health_routes(app, provider_probe=lambda: asyncio.sleep(0, result=False))
     register_ws_routes(
         app,
         registry=registry,

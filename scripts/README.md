@@ -1,18 +1,14 @@
 # scripts/
 
-Ad-hoc Python utilities run by maintainers, not part of the runtime call path.
+Ad-hoc utilities run by maintainers, not part of the runtime call path.
 
-Each script is standalone and invoked from the repo root. Current scripts:
+Current public scripts:
 
-- `build-public-filelist.py` — builds the filtered file list for the
-  `sync-private-to-public` skill (consumes `install/public-allowlist.md`
-  and `.public-sync-deny`).
-- `stability-24h-driver.py` — drives the 24-hour orchestrator stability
-  rehearsal (Phase 4 DEPLOY-02 evidence harness). Hardware-agnostic; the
-  reference run was executed against a Raspberry Pi orchestrator.
-The dead-code-scanner whitelist (`vulture-whitelist.py`) was relocated to
-`.tooling/vulture-whitelist.py` in Phase 6 (maintainer-only scan tooling lives
-under `.tooling/` and is excluded from the public mirror).
+- `build-public-filelist.py` — builds the filtered file list for the public
+  export flow.
+- `build-macos-release.sh` — builds the packaged macOS release artifact,
+  optional signing/notarization path, zip, and `SHA256SUMS`.
+- `smoke.sh` — local backend smoke check for source development.
 
-Contrast with `infra/` (deployable services) and `tools/` (reserved for release
-tooling, currently empty pending future use).
+Contrast with `install/` (user-facing install/update/uninstall scripts) and
+`tools/` (release and CI helper modules).

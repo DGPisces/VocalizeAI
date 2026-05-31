@@ -25,10 +25,10 @@ from vocalize.llm.base import (
 )
 from vocalize.llm.openai_compat import LLMServiceError
 from vocalize.pipeline import VoicePipeline
+from vocalize.providers.speech import SpeechProviderError
 from vocalize.stt.base import Transcript
 from vocalize.transports.base import AudioEncoding
 from vocalize.tts.base import TextChunk
-from vocalize.tts.cosyvoice import CosyVoiceError
 
 
 class FakeTransport:
@@ -257,7 +257,7 @@ async def test_llm_error_does_not_crash_pipeline() -> None:
 
 
 async def test_tts_error_does_not_crash_pipeline() -> None:
-    """C2 回归：TTS 第一轮抛 CosyVoiceError，第二轮正常；pipeline 必须跑完两轮。"""
+    """C2 回归：TTS 第一轮抛 SpeechProviderError，第二轮正常；pipeline 必须跑完两轮。"""
     transport = FakeTransport()
     stt = FakeSTT([
         Transcript(text="你好", is_final=True, confidence=1, start_time=0,
@@ -287,7 +287,7 @@ async def test_tts_error_does_not_crash_pipeline() -> None:
                 per_call.append(c)
             self.received_chunks.append(per_call)
             if self.calls == 1:
-                raise CosyVoiceError("simulated GPU OOM")
+                raise SpeechProviderError("simulated provider outage")
             yield b"second-turn-audio"
 
     tts = FlakyTTS()
@@ -353,7 +353,7 @@ async def test_tts_dies_during_llm_error_does_not_deadlock() -> None:
     """I3 回归：TTS 先死、LLM 后报错时，fallback put 和 None 哨兵不应永久阻塞。
 
     text_q maxsize=32；FakeLLM 推 60 个 TextDelta（超过队列容量）后抛
-    LLMServiceError。FlakyTTS 在第一个 chunk 消费前直接抛 CosyVoiceError，
+    LLMServiceError。FlakyTTS 在第一个 chunk 消费前直接抛 SpeechProviderError，
     让 TTS task 在 LLM 还没报错时已 dead。若 fix 缺失，两次 await text_q.put()
     在 queue 满时永久阻塞，asyncio.wait_for 超时即为回归。
     """
@@ -376,14 +376,14 @@ async def test_tts_dies_during_llm_error_does_not_deadlock() -> None:
             raise LLMServiceError("boom after many deltas")
 
     class FlakyTTSImmediate:
-        """立即抛 CosyVoiceError，不消费任何 text chunk。"""
+        """立即抛 SpeechProviderError，不消费任何 text chunk。"""
         output_sample_rate: int = 24000
         output_encoding: AudioEncoding = "pcm_s16le"
 
         async def stream_synthesize(
             self, text_chunks: AsyncIterator[TextChunk]
         ) -> AsyncIterator[bytes]:
-            raise CosyVoiceError("simulated immediate TTS death")
+            raise SpeechProviderError("simulated immediate TTS death")
             yield b""  # type: ignore[unreachable]
 
     pipeline = VoicePipeline(
@@ -435,7 +435,7 @@ async def test_tts_dies_during_normal_llm_completion_does_not_deadlock() -> None
         async def stream_synthesize(
             self, text_chunks: AsyncIterator[TextChunk]
         ) -> AsyncIterator[bytes]:
-            raise CosyVoiceError("simulated immediate TTS death")
+            raise SpeechProviderError("simulated immediate TTS death")
             yield b""  # type: ignore[unreachable]
 
     pipeline = VoicePipeline(
@@ -458,7 +458,7 @@ async def test_tts_dies_during_normal_llm_completion_does_not_deadlock() -> None
 
 
 async def test_tts_failure_does_not_pollute_history() -> None:
-    """B3 回归：TTS 抛 CosyVoiceError 时 assistant 文本不应入历史——用户什么都没听到，
+    """B3 回归：TTS 抛 SpeechProviderError 时 assistant 文本不应入历史——用户什么都没听到，
     持久化"虚假回复"会让下一轮 LLM 对话状态发散。
     """
     transport = FakeTransport()
@@ -479,7 +479,7 @@ async def test_tts_failure_does_not_pollute_history() -> None:
         ) -> AsyncIterator[bytes]:
             async for _ in text_chunks:
                 pass
-            raise CosyVoiceError("simulated TTS death")
+            raise SpeechProviderError("simulated TTS death")
             yield b""  # type: ignore[unreachable]
 
     pipeline = VoicePipeline(
@@ -503,9 +503,7 @@ async def test_tts_failure_does_not_pollute_history() -> None:
 
 
 async def test_stt_error_ends_session_cleanly() -> None:
-    """I7 回归：STT 抛 SenseVoiceError 应 end-session-cleanly——不外抛、关 transport。"""
-    from vocalize.stt.sensevoice import SenseVoiceError
-
+    """I7 回归：STT 抛 SpeechProviderError 应 end-session-cleanly——不外抛、关 transport。"""
     transport = FakeTransport()
 
     class BoomSTT:
@@ -515,7 +513,7 @@ async def test_stt_error_ends_session_cleanly() -> None:
             yield Transcript(text="hi", is_final=True, confidence=1,
                              start_time=0, end_time=1, utterance_id=0,
                              language="en")
-            raise SenseVoiceError("STT GPU died")
+            raise SpeechProviderError("STT provider died")
 
     llm = FakeLLM([[_td("ok."), _fin()]])
     tts = FakeTTS([[b"x"]])
@@ -738,18 +736,17 @@ async def test_mixed_text_then_tool_call_gates_post_tool_text() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Phase 4 Plan 04-03 fix #1 dispatch repair (debug session
-# cosyvoice-batch-dispatch-deadcode)
+# Phase 4 Plan 04-03 fix #1 dispatch repair.
 # ---------------------------------------------------------------------------
 async def test_batch_dispatch_short_reply_single_frame() -> None:
     """Phase 4 Plan 04-03 fix #1 dispatch repair regression.
 
     A short reply that completes in a single sentence-ender ("好的。") MUST be
     sent to the TTS service as ONE TextChunk with is_final_segment=True — that
-    is the precondition for cosyvoice server.py:948-966 batch dispatch path
-    (text_frame_count_for_session==0 AND is_final) to ever fire. Pre-fix, the
-    pipeline emitted 2 frames (mid is_final=False + empty is_final=True
-    sentinel), making the batch path mathematically unreachable.
+    is the precondition for provider batch dispatch
+    (text_frame_count_for_session==0 AND is_final) to ever fire. Pre-fix,
+    the pipeline emitted 2 frames (mid is_final=False + empty is_final=True
+    sentinel), making the batch path unreachable.
     """
     transport = FakeTransport()
     stt = FakeSTT([
@@ -779,7 +776,7 @@ async def test_batch_dispatch_short_reply_single_frame() -> None:
     # Exactly ONE chunk with is_final_segment=True and the full reply text.
     assert len(chunks) == 1, (
         f"short reply must compact into a single TTS frame to enable "
-        f"cosyvoice batch dispatch; got {len(chunks)} frames: "
+        f"provider batch dispatch; got {len(chunks)} frames: "
         f"{[(c.text, c.is_final_segment) for c in chunks]}"
     )
     assert chunks[0].is_final_segment is True
@@ -790,7 +787,7 @@ async def test_bistream_dispatch_multi_segment_unchanged() -> None:
     """Companion to test_batch_dispatch_short_reply_single_frame.
 
     Multi-sentence replies MUST still stream as multiple chunks (mid + final)
-    so that cosyvoice bistream path keeps working — the batch dispatch repair
+    so that streaming provider paths keep working — the batch dispatch repair
     must not regress long-reply ttft. With "好的。明天给你确认。" the patched
     pipeline:
       1. stash 第一段 "好的。" 进 pending（is_final=False）

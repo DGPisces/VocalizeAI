@@ -14,7 +14,7 @@ process.env.NODE_PATH = [
 
 const backendURL =
   process.env.VOCALIZE_RELEASE_AUDIO_BACKEND_URL ??
-  process.env.NEXT_PUBLIC_VOCALIZE_API_BASE_URL;
+  process.env.VITE_VOCALIZE_API_BASE_URL;
 const frontendURL =
   process.env.VOCALIZE_RELEASE_AUDIO_FRONTEND_URL ?? "http://localhost:3000";
 
@@ -40,14 +40,14 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: "npm run dev -- --hostname localhost --port 3000",
+      command: "npm run dev -- --host localhost --port 3000",
       url: frontendURL,
       reuseExistingServer: false,
       timeout: 60_000,
       env: {
         ...process.env,
-        NEXT_PUBLIC_VOCALIZE_API_BASE_URL: backendURL,
-        NEXT_PUBLIC_E2E_AUDIO_HOOK: "1",
+        VITE_VOCALIZE_API_BASE_URL: backendURL,
+        VITE_E2E_AUDIO_HOOK: "1",
       },
     },
   ],

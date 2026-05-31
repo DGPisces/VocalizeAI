@@ -373,13 +373,14 @@ async def test_health_check_auth_error_propagates() -> None:
             await client.health_check()
 
 
-async def test_extra_body_thinking_disabled_for_deepseek_v4() -> None:
-    """deepseek-v4-flash 流式请求自动附加 ``thinking:{type:disabled}``。"""
+async def test_extra_body_thinking_disabled_mode_for_stream() -> None:
+    """非 thinking 模式下，流式请求附加 ``thinking:{type:disabled}``。"""
     client = OpenAICompatClient(
         OpenAICompatConfig(
             api_key="sk-test",
             base_url="https://api.deepseek.com",
-            model="deepseek-v4-flash",
+            model="test-model",
+            thinking_mode="disabled",
         )
     )
     create = AsyncMock(return_value=FakeStream([]))
@@ -390,13 +391,14 @@ async def test_extra_body_thinking_disabled_for_deepseek_v4() -> None:
     assert kwargs["extra_body"] == {"thinking": {"type": "disabled"}}
 
 
-async def test_extra_body_thinking_disabled_health_check_deepseek_v4() -> None:
-    """health_check 在 deepseek-v4 上也带 disable thinking flag。"""
+async def test_extra_body_thinking_disabled_mode_for_health_check() -> None:
+    """health_check 在非 thinking 模式下也带 disable thinking flag。"""
     client = OpenAICompatClient(
         OpenAICompatConfig(
             api_key="sk-test",
             base_url="https://api.deepseek.com",
-            model="deepseek-v4-pro",
+            model="test-model",
+            thinking_mode="disabled",
         )
     )
     create = AsyncMock(return_value=MagicMock())
@@ -406,13 +408,14 @@ async def test_extra_body_thinking_disabled_health_check_deepseek_v4() -> None:
     assert kwargs["extra_body"] == {"thinking": {"type": "disabled"}}
 
 
-async def test_no_extra_body_for_minimax() -> None:
-    """MiniMax 服务端忽略 thinking 参数；client 不发，避免误导。"""
+async def test_no_extra_body_when_thinking_enabled() -> None:
+    """thinking enabled 表示不发送关闭 thinking 的额外字段。"""
     client = OpenAICompatClient(
         OpenAICompatConfig(
             api_key="sk-test",
             base_url="https://api.minimaxi.com/v1",
             model="MiniMax-M2.7",
+            thinking_mode="enabled",
         )
     )
     create = AsyncMock(return_value=FakeStream([]))
@@ -423,13 +426,14 @@ async def test_no_extra_body_for_minimax() -> None:
     assert "extra_body" not in kwargs
 
 
-async def test_no_extra_body_for_legacy_deepseek_chat() -> None:
-    """``deepseek-chat`` 老别名服务端默认非思考模式；不需要 extra_body 也无副作用。"""
+async def test_enabled_mode_omits_extra_body_for_deepseek_v4() -> None:
+    """即使是 DeepSeek V4，用户选择 enabled 时也不强行关闭 thinking。"""
     client = OpenAICompatClient(
         OpenAICompatConfig(
             api_key="sk-test",
             base_url="https://api.deepseek.com/v1",
-            model="deepseek-chat",
+            model="deepseek-v4-flash",
+            thinking_mode="enabled",
         )
     )
     create = AsyncMock(return_value=FakeStream([]))
@@ -437,7 +441,6 @@ async def test_no_extra_body_for_legacy_deepseek_chat() -> None:
         async for _ in client.stream_chat([ChatMessage(role="user", content="hi")]):
             pass
     kwargs = create.await_args.kwargs
-    # ``deepseek-chat`` 没在 _DISABLE_THINKING_PREFIXES 列表里 → 不发 extra_body
     assert "extra_body" not in kwargs
 
 
@@ -461,6 +464,7 @@ async def test_from_app_config_ok() -> None:
     assert client._config.api_key == "sk-x"
     assert client._config.base_url == "https://example.test/v1"
     assert client._config.model == "m"
+    assert client._config.thinking_mode == "disabled"
 
 
 async def test_tools_passed_to_create() -> None:

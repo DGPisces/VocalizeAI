@@ -8,7 +8,7 @@
  *
  * Requires:
  *   - Backend:  uvicorn vocalize.main:app --port 8000
- *   - Frontend: NEXT_PUBLIC_VOCALIZE_API_BASE_URL=http://127.0.0.1:8000 npm run dev --port 3000
+ *   - Frontend: VITE_VOCALIZE_API_BASE_URL=http://127.0.0.1:8000 npm run dev -- --port 3000
  *
  * The playwright.config.ts in frontend/ boots both servers automatically
  * via the webServer configuration.

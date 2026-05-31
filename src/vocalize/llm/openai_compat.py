@@ -35,7 +35,7 @@ import openai
 from openai import AsyncOpenAI, AsyncStream
 from openai.types.chat import ChatCompletionChunk
 
-from vocalize.config import Config
+from vocalize.config import Config, OpenAIThinkingMode
 from vocalize.llm.base import (
     ChatMessage,
     FinishChunk,
@@ -56,22 +56,13 @@ _KNOWN_FINISH_REASONS: set[str] = {"stop", "tool_calls", "length", "content_filt
 _THINK_OPEN = "<think>"
 _THINK_CLOSE = "</think>"
 
-# 模型前缀 → 在请求体附加 ``thinking: {type: "disabled"}``。
-# DeepSeek-V4 系列文档 (api-docs.deepseek.com/api/create-chat-completion)
-# 明确写：``"thinking": {"type": "disabled"}`` 表示 use non-thinking model；
-# 老别名 ``deepseek-chat`` 直接路由到 v4-flash 非思考模式，无需此字段，但加上
-# 也无副作用（OpenAI-compat 服务端忽略未知字段）。
-# MiniMax-M 系按文档此字段会被忽略（M2.7 server 永远会推理），故不加——
-# client-side ``_ThinkingStripper`` 兜底剥离 <think>...</think>。
-_DISABLE_THINKING_PREFIXES: tuple[str, ...] = (
-    "deepseek-v4-",
-    "deepseek-reasoner",
-)
-
-
-def _server_disable_thinking(model: str) -> bool:
-    """返回 True 表示该模型支持 server-side ``thinking:{type:disabled}`` 关闭。"""
-    return any(model.startswith(p) for p in _DISABLE_THINKING_PREFIXES)
+# 用户显式选择非 thinking 时，在请求体附加 ``thinking: {type: "disabled"}``。
+# ``enabled`` 不发送额外字段，避免假设所有 OpenAI-compatible 端点都支持
+# ``thinking:{type:enabled}``。
+def _thinking_extra_body(mode: OpenAIThinkingMode) -> dict[str, Any] | None:
+    if mode == "disabled":
+        return {"thinking": {"type": "disabled"}}
+    return None
 
 
 def _potential_prefix_len(tail: str, target: str) -> int:
@@ -197,6 +188,7 @@ class OpenAICompatConfig:
     api_key: str
     base_url: str
     model: str
+    thinking_mode: OpenAIThinkingMode = "disabled"
     request_timeout: float = 30.0
     max_retries: int = 2
 
@@ -238,6 +230,7 @@ class OpenAICompatClient:
                 api_key=cfg.openai_api_key,
                 base_url=cfg.openai_base_url,
                 model=cfg.openai_model,
+                thinking_mode=cfg.openai_thinking_mode,
             )
         )
 
@@ -319,8 +312,9 @@ class OpenAICompatClient:
                 "max_tokens": 1,
                 "stream": False,
             }
-            if _server_disable_thinking(self._config.model):
-                kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
+            extra_body = _thinking_extra_body(self._config.thinking_mode)
+            if extra_body is not None:
+                kwargs["extra_body"] = extra_body
             await self._client.chat.completions.create(**kwargs)
             return True
         except openai.AuthenticationError:
@@ -352,8 +346,9 @@ class OpenAICompatClient:
                 }
                 if oai_tools is not None:
                     kwargs["tools"] = oai_tools
-                if _server_disable_thinking(self._config.model):
-                    kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
+                extra_body = _thinking_extra_body(self._config.thinking_mode)
+                if extra_body is not None:
+                    kwargs["extra_body"] = extra_body
                 stream = await self._client.chat.completions.create(**kwargs)
                 return cast(AsyncStream[ChatCompletionChunk], stream)
             except openai.AuthenticationError as exc:

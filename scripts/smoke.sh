@@ -65,12 +65,12 @@ if [ "$OK" != "true" ]; then
     fail "[1/5]" ".ok is not true in response: ${HEALTH_RESP}"
 fi
 
-GPU=$(echo "$HEALTH_RESP" | jq -r '.gpu_reachable' 2>/dev/null) || GPU="unknown"
-if [ "$GPU" = "false" ]; then
-    echo "[1/5] WARNING: gpu_reachable=false — GPU services may be offline (smoke continues)."
+SPEECH=$(echo "$HEALTH_RESP" | jq -r '.speech_provider_reachable' 2>/dev/null) || SPEECH="unknown"
+if [ "$SPEECH" = "false" ]; then
+    echo "[1/5] WARNING: speech_provider_reachable=false — speech provider may be offline (smoke continues)."
 fi
 
-echo "[1/5] GET /health... PASS (gpu_reachable=${GPU})"
+echo "[1/5] GET /health... PASS (speech_provider_reachable=${SPEECH})"
 
 # ---------------------------------------------------------------------------
 # Step 2: POST /api/sessions

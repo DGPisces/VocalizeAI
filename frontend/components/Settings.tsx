@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/src/i18n";
 import { DeviceSettings } from "./DeviceSettings";
 import type { DevicePreferences, DeviceSwitchStatus } from "./DeviceSettings";
 

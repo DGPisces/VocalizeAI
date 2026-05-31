@@ -8,7 +8,7 @@ Two encodings:
 - **Audio frames** are raw binary WS messages. Inbound (client→server) is raw
   PCM int16 LE 16 kHz mono. Outbound (server→client) prefixes a single ASCII
   role byte (``b'U'`` = ai-to-user, ``b'M'`` = ai-to-merchant) before the same
-  PCM payload at 24 kHz (matching the CosyVoice2 default sample rate).
+  PCM payload at 24 kHz (the default Provider API output sample rate).
 
 Server→client frames + binary helpers are added in Tasks 2–3.
 """
@@ -383,7 +383,7 @@ class OutboundAudioChunk:
     """Decoded payload of a server→client binary audio WS frame.
 
     The role tag is stored alongside so callers can route to the correct UI
-    visualiser. Sample format: PCM int16 LE 24 kHz mono (CosyVoice2 default).
+    visualiser. Sample format: PCM int16 LE 24 kHz mono by default.
     """
 
     role: AudioOutboundRole

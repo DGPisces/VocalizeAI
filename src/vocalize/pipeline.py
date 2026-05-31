@@ -15,7 +15,7 @@
 - 每一轮内部并发：LLM 文本流和 TTS 合成 / 播音同步进行——LLM 还在 yield 的时候，
   TTS 已经能拿到首句开始合成，扬声器就能开始播第一段音频。这是 e2e<2.5s 的关键。
 - 段切割发生在 LLM→TTS 之间：按 ``。！？.!?\n`` 切句子边界，最后一段标
-  ``is_final_segment=True`` 触发 CosyVoice flush。
+  ``is_final_segment=True`` 触发 provider flush。
 - back-pressure 自然存在：TTS 输入是 asyncio.Queue（bounded），TTS 输出是 PortAudio
   buffer；任一侧慢都会反压回 LLM token 拉取速度。
 
@@ -106,7 +106,7 @@ class TurnTiming:
     def stt_finalize(self) -> float | None:
         """从 "用户停止说话"（last_partial）到 STT final 的延迟。
 
-        包含：SenseVoice 端点检测 + finalize + 网络回程。是 STT 部分的最大头。
+        包含：STT 端点检测 + finalize + 网络回程。是 STT 部分的最大头。
         """
         if self.last_partial_at is None:
             return None
@@ -164,12 +164,12 @@ class _TurnRunState:
     finish_reason: Literal["stop", "tool_calls", "length", "content_filter"] | None = None
     tool_call_in_progress: bool = False
     # Phase 4 Plan 04-03 fix #1 dispatch repair (debug session
-    # cosyvoice-batch-dispatch-deadcode):
+    # provider-batch-dispatch-deadcode):
     # ``pending_first_segment`` stash 第一个 sentence-ender 切出的段；只在确定
     # 后续还有内容时才作为 ``is_final=False`` flush。流末 (_handle_turn) 若发现
-    # pending 仍非空 + tail 空 → 把它以 ``is_final=True`` 单帧发出，让 cosyvoice
-    # server.py:948-966 的 batch dispatch 路径可以在短回复（"好的。" / "4 位"）
-    # 上命中，节省 ~1.5s ttft。多句长回复因 _handle_llm_chunk 在第二个 sentence-ender
+    # pending 仍非空 + tail 空 → 把它以 ``is_final=True`` 单帧发出，让 provider
+    # 的 batch dispatch 路径可以在短回复（"好的。" / "4 位"）上命中，
+    # 节省 ~1.5s ttft。多句长回复因 _handle_llm_chunk 在第二个 sentence-ender
     # 来到时就把 pending flush 掉，行为与原来等价（仅单 LLM-chunk 间隔的延迟）。
     pending_first_segment: TextChunk | None = None
     mid_segment_flushed: bool = False
@@ -178,12 +178,9 @@ class _TurnRunState:
 class VoicePipeline:
     """组装 transport + STT + LLM + TTS 的语音对话管道。
 
-    服务接口在 ``run()`` / ``_handle_turn()`` 里仍以 Protocol 契约调用，但
-    per-turn 的错误恢复路径目前直接 catch ``SenseVoiceError`` /
-    ``LLMServiceError`` / ``CosyVoiceError`` 这三个具体类，所以替换成其他
-    实现会绕过 per-turn 兜底。
-    TODO(phase-4): introduce ``VoiceServiceError`` base class so pipeline can
-    catch generically and accept arbitrary service implementations.
+    服务接口在 ``run()`` / ``_handle_turn()`` 里以 Protocol 契约调用；STT/TTS
+    错误统一 catch ``VoiceServiceError``，所以默认 Provider API 客户端和遗留
+    本地客户端都能走同一条恢复路径。
 
     Args:
         transport: 双向音频 transport（mic + speaker / telephony transport (v2)）。
@@ -230,12 +227,12 @@ class VoicePipeline:
         """主对话循环。STT final → LLM → TTS → 扬声器 → 下一轮。
 
         错误恢复策略不对称：
-        - LLM/TTS 错误是 per-turn 的（GPU 偶发 OOM、某个 prompt 触发服务端 bug），
+        - LLM/TTS 错误是 per-turn 的（provider 短暂不可用、某个 prompt 触发服务端 bug），
           下一轮用户输入仍可以正常走，所以放在 ``_handle_turn`` 里吞掉。
         - STT 错误意味着拿不到下一句用户输入，整个会话失去意义，所以这里 break
           走 finally 优雅关掉 transport，让上层（systemd / 主进程）决定是否重启。
         """
-        from vocalize.stt.sensevoice import SenseVoiceError
+        from vocalize.errors import VoiceServiceError
 
         audio_in = self._transport.input_stream()
         # Phase 4 Plan 04-04: pass transport reference into STT so it can
@@ -243,7 +240,7 @@ class VoicePipeline:
         # sends {"event": "end_of_utterance"} over WS the moment webrtcvad
         # detects 9-of-10 unvoiced frames. STTService Protocol still accepts
         # a single positional argument; the ``transport`` kwarg is concrete
-        # to SenseVoiceClient — we feature-detect it to keep alternative STT
+        # to provider clients — we feature-detect it to keep alternative STT
         # implementations (and tests using a fake STT) working without
         # changes.
         try:
@@ -280,7 +277,7 @@ class VoicePipeline:
                     )
                     first_partial_at = None
                     last_partial_at = None
-            except SenseVoiceError as exc:
+            except VoiceServiceError as exc:
                 log.error("STT error; ending session: %s", exc)
         finally:
             # 实现是 async generator 一定带 aclose；Protocol 上声明的是 AsyncIterator，
@@ -303,8 +300,8 @@ class VoicePipeline:
         last_partial_at: float | None = None,
     ) -> None:
         """跑一轮：LLM 流 → 段切 → TTS → 扬声器。"""
+        from vocalize.errors import VoiceServiceError
         from vocalize.llm.openai_compat import LLMServiceError
-        from vocalize.tts.cosyvoice import CosyVoiceError
 
         timing = TurnTiming(
             user_text=user_text,
@@ -418,9 +415,9 @@ class VoicePipeline:
                     if pending is not None and not tail:
                         # Phase 4 Plan 04-03 fix #1：短回复合并路径。唯一一个
                         # sentence-ender 切出的段就是整个回复 → 直接以
-                        # is_final=True 单帧发出。CosyVoice server.py:948-966 的
-                        # batch dispatch (text_frame_count==0 && is_final) 现在
-                        # 可以命中，省 ~1.5s ttft。
+                        # is_final=True 单帧发出。provider 的 batch dispatch
+                        # (text_frame_count==0 && is_final) 现在可以命中，
+                        # 省 ~1.5s ttft。
                         await _safe_put(
                             TextChunk(
                                 text=pending.text,
@@ -464,9 +461,9 @@ class VoicePipeline:
             try:
                 await tts_task
                 state.tts_succeeded = True
-            except CosyVoiceError as exc:
-                # TTS 中途 fatal 错误（GPU OOM、服务端 fatal 帧）：放弃本轮音频，
-                # 不让单次 GPU 抖动 kill 整个会话。注意 LLM-error 路径下 TTS 还活着、
+            except VoiceServiceError as exc:
+                # TTS 中途 fatal 错误（provider outage、服务端 fatal 帧）：放弃本轮音频，
+                # 不让单次 provider 抖动 kill 整个会话。注意 LLM-error 路径下 TTS 还活着、
                 # 可推 fallback；这里 TTS 任务已 dead，再 put text_q 也合不出音频，
                 # 所以只 log，不重试发兜底。
                 # TODO(phase-4): relaunch TTS stream for fallback in TTS-error path

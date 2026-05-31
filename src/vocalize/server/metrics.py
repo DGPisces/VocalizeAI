@@ -10,7 +10,7 @@ Design note: the ``refresh_runtime_gauges`` helper is called on every
 ``install_error_counter`` must be called once at app startup.
 
 Reference: prometheus_client pattern from
-``infra/gpu-services/sensevoice/server.py:75-161``.
+the Provider API speech runtime.
 """
 from __future__ import annotations
 

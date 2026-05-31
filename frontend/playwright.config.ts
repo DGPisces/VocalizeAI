@@ -30,7 +30,7 @@ export default defineConfig({
       timeout: 30_000
     },
     {
-      command: "NEXT_PUBLIC_VOCALIZE_API_BASE_URL=http://127.0.0.1:8000 NEXT_PUBLIC_E2E_AUDIO_HOOK=1 npm run dev -- --hostname localhost --port 3000",
+      command: "VITE_VOCALIZE_API_BASE_URL=http://127.0.0.1:8000 VITE_E2E_AUDIO_HOOK=1 npm run dev -- --host localhost --port 3000",
       url: "http://localhost:3000",
       reuseExistingServer: !process.env.CI,
       timeout: 30_000

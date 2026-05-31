@@ -2,195 +2,138 @@
 
 > English version: [README.md](README.md)
 
-VocalizeAI 是双语（中/英）AI 电话代理。v1 把它从只能订餐厅的 bot 改造成
-通用电话任务引擎：用自然语言描述任何电话任务，AI 会自动规划槽位结构、
-向你收集必需信息、然后跟商家通话 —— 必要时跨语言传译。
+VocalizeAI 是 Mac-first 的 AI 电话任务助手。你描述要完成的电话任务，应用会收集
+缺失信息，然后通过本地网页控制台完成任务流程，包括实时转写、澄清、人工接管、
+挂断/结束、诊断和通话后复盘。
 
-## 当前状态
+公开版 `v0.1.0` 的默认路径只有三步：安装 macOS artifact，配置
+OpenAI-compatible LLM 接口，使用内置 macOS 原生语音 provider。STT 和 TTS 都通过
+Vocalize Provider API 接入；高级用户以后可以替换语音服务，但普通用户不需要选择
+任何语音模型。
 
-**v1 已发布**：通用电话任务引擎、Web 控制台、树莓派编排器部署全部就绪。
-后端 5 层 prompt 架构（task_planner / preflight / merchant_agent /
-clarification_collector / relay）可处理任何电话任务 —— 餐厅订位、预约服务、
-查询余额、状态查询等。OSS 镜像发布于
-[github.com/DGPisces/VocalizeAI](https://github.com/DGPisces/VocalizeAI)，
-协议 Apache 2.0。
+## macOS 安装
 
-## 快速开始
-
-**前提条件：** Python 3.11+、Node 20+、git、curl。可选：`uv`（安装脚本会自动安装）。
+从 GitHub Release 下载 release zip 和 `SHA256SUMS`，然后在你希望创建
+`VocalizeAI/` 的文件夹里运行：
 
 ```bash
-# 1. 一键安装所有依赖
+bash install/install.sh \
+  --artifact VocalizeAI-0.1.0-macos-arm64.zip \
+  --checksums SHA256SUMS
+```
+
+进入安装目录并启动：
+
+```bash
+cd VocalizeAI
+./vocalize setup
+./vocalize doctor
+./vocalize start
+```
+
+`setup` 会询问：
+
+- LLM base URL
+- LLM API key
+- LLM model
+- 是否添加可选的全局 `vocalize` 命令
+- `start` 是否自动打开浏览器
+
+默认 macOS 安装不会让用户选择语音模型。VocalizeAI 会启动打包好的 macOS speech
+helper，并通过 Provider API 与它通信。
+
+## 更新或卸载
+
+```bash
+# 使用新 release artifact 更新，保留 config/logs/cache
+./vocalize update --artifact ../VocalizeAI-0.1.1-macos-arm64.zip --checksums ../SHA256SUMS
+
+# 删除本地安装和可选的全局 symlink
+./vocalize uninstall
+# 或
+bash uninstall.sh
+```
+
+默认安装只写入当前文件夹下的 `VocalizeAI/`。它不会默认安装全局 Python 包、Node
+包、launch agent、system service，也不会修改 shell 配置。可选全局命令只是一个可
+移除 symlink，并记录在安装配置里。
+
+## 功能范围
+
+- 本地 `VocalizeAI/` 安装目录
+- 普通用户只配置 LLM
+- 内置 macOS 原生 STT/TTS helper
+- 可扩展 Provider API，用于自定义 STT/TTS 服务
+- 打包后端直接托管 React + Vite 控制台
+- 创建任务、readiness、实时转写、澄清、人工接管、挂断/结束、诊断、设置和复盘
+- 中文和英文界面
+
+## Provider API
+
+语音边界见 [docs/provider-api.md](docs/provider-api.md)。默认 macOS helper 和自定义
+provider 使用同一套 API：
+
+- health 和 capability discovery
+- realtime STT partial/final transcript event
+- streaming TTS event
+- cancellation 和结构化错误
+
+`v0.1.0` 的公开支持平台是 macOS。其他平台可以通过实现同一个 Provider API 扩展。
+
+## 开发
+
+源码开发仍然使用本地开发工具链。
+
+```bash
 bash install/dev-install.sh
-
-# 2. 编辑 .env，至少设置 OPENAI_API_KEY
-#    （如果 .env 不存在，安装脚本已自动从 .env.example 复制）
 $EDITOR .env
-
-# 3. 启动后端
 source .venv/bin/activate
-uvicorn vocalize.main:app --host 127.0.0.1 --port 8000 --reload
-
-# 4. 启动前端（另开一个终端）
-cd frontend && npm run dev
-
-# 5. 验证安装
-bash scripts/smoke.sh
-# 退出码 0 = 开发环境正常（从克隆到 smoke 通过 ≤15 分钟）
-```
-
-**确定性安装：** 激活 venv 后运行 `uv pip sync uv.lock`，可使用提交的锁文件做确定性 Python 依赖安装。
-
-完整的 Mac/Linux 安装手册（含环境变量说明和故障排查），见
-[docs/deploy/local.md](docs/deploy/local.md)。
-
-## v1 — 通用电话代理（CLI）
-
-```bash
-# (in project venv)
-export OPENAI_BASE_URL="https://api.deepseek.com"
-export OPENAI_API_KEY="..."
-python -m demos.phase5_universal_agent_cli
-```
-
-该 demo 在无界面模式下运行完整通用电话代理引擎：
-
-1. 你用自然语言描述一个任务（"帮我订 Joy Sushi 今晚 7 点 4 个人的位子"）。
-2. Layer 1（`task_planner`）输出一个 `TaskSchema` —— 要收集的槽位、
-   readiness 判定标准、relay 翻译策略。
-3. Layer 2（`preflight`）跟用户对话，直到所有高关键性槽位都填满。
-4. Layer 3（`merchant_agent`）拨打并主导通话。
-5. Layer 4–5（`clarification_collector`、`relay`）处理通话中追加澄清和
-   跨语言翻译。
-
-## 仓库结构
-
-```
-VocalizeAI/
-├── src/vocalize/              # main backend package (service-boundary modules)
-│   ├── transports/            # audio I/O — local mic, speakerphone bridge
-│   ├── stt/                   # speech-to-text — SenseVoice streaming
-│   ├── llm/                   # LLM — OpenAI-compatible streaming + tool-calling
-│   ├── tts/                   # text-to-speech — CosyVoice streaming
-│   ├── dialogue/              # orchestrator, state machine, prompts, tools
-│   ├── reflection/            # post-call review
-│   ├── server/                # FastAPI app — REST sessions + WS frames
-│   ├── pipeline.py            # asyncio main pipeline
-│   ├── config.py              # env / .env loading
-│   └── logger.py              # system + dialogue logging
-├── frontend/                  # Next.js 14 web console
-│   ├── app/                   # App Router routes
-│   ├── components/            # BrowserAudioBridge, LiveConsole, etc.
-│   ├── lib/                   # WS client, audio utils, REST client
-│   ├── messages/              # next-intl zh/en bundles
-│   └── tests/                 # vitest unit tests
-├── demos/                     # runnable demos
-├── infra/                     # 部署脚本(GPU 节点、Linux 编排器)
-├── tests/                     # pytest suite
-│   └── integration/           # Playwright laptop-loopback + AI-merchant harness
-├── install/                   # 一键安装脚本
-│   ├── dev-install.sh         # Mac/Linux 本地开发环境安装
-│   └── install.sh             # Linux 生产部署安装(树莓派是一种受支持的目标)
-├── docs/                      # 架构文档、部署指南、发布记录
-├── scripts/                   # smoke 测试和工具脚本
-│   └── smoke.sh               # 安装后端到端验证脚本
-├── pyproject.toml             # 后端依赖单一来源
-├── uv.lock                    # Python 依赖固定锁文件
-└── .env.example               # 环境变量模板（17 个 key）
-```
-
-## 自托管快速上手
-
-### 非 localhost 部署必需环境变量
-
-| 变量 | 用途 |
-|------|------|
-| `VOCALIZE_WS_BASE_URL` | 返回给客户端的 WebSocket 基地址（如 `wss://api.example.com`）；非 localhost 模式必填,防止 Host 头欺骗 |
-| `VOCALIZE_CORS_ORIGINS` | 允许的 CORS 来源（逗号分隔）;非 localhost 模式**必填**(无默认值) |
-
-完整环境变量清单（含 LLM、GPU 服务、前端构建变量）见 `.env.example`。
-
-完整的树莓派生产部署手册，见 [docs/deploy/linux.md](docs/deploy/linux.md)。
-
-### GPU 节点要求
-
-SenseVoice（STT）和 CosyVoice（TTS）作为独立 GPU 服务运行，通过 Tailscale
-与树莓派编排器连接。本地开发不需要 GPU（只需 LLM 路径即可运行）。GPU 节点配置见
-[docs/deploy/linux.md](docs/deploy/linux.md)。
-
-## 跑开发服务器
-
-```bash
-source .venv/bin/activate
-
-# optional: configure GPU services so /health reports gpu_reachable=true
-export GPU_HOST=100.x.y.z            # GPU 节点的 Tailscale IP
-export SENSEVOICE_WS_PORT=8000       # STT 服务
-export COSYVOICE_WS_PORT=8001        # TTS 服务
-
 uvicorn vocalize.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 另开一个终端：
 
 ```bash
-curl -s http://127.0.0.1:8000/health
-# → {"ok": true, "gpu_reachable": true}
-
-SESSION=$(curl -s -X POST http://127.0.0.1:8000/api/sessions | python3 -c \
-  'import sys,json; print(json.load(sys.stdin)["session_id"])')
-
-curl -s -X POST "http://127.0.0.1:8000/api/sessions/$SESSION/task" \
-  -H 'Content-Type: application/json' \
-  -d '{"task":"帮我订海底捞"}'
-
-# brew install websocat（macOS）或 apt install websocat（Linux）
-websocat ws://127.0.0.1:8000/ws/sessions/$SESSION
-# → server emits state_update / transcript_update / readiness_change frames
-
-# 或者运行完整 smoke 测试：
-bash scripts/smoke.sh
-```
-
-系统架构说明（5 层对话流水线、TaskPhase 状态机、WS 帧目录、REST 接口），见
-[docs/architecture.md](docs/architecture.md)。
-
-## 跑 Web 控制台
-
-终端 1：
-
-```bash
-source .venv/bin/activate
-uvicorn vocalize.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-终端 2：
-
-```bash
 cd frontend
-export NEXT_PUBLIC_VOCALIZE_API_BASE_URL=http://127.0.0.1:8000
-npm run dev -- --hostname 127.0.0.1 --port 3000
+npm ci
+npm run dev -- --host 127.0.0.1 --port 3000
 ```
 
-打开 `http://127.0.0.1:3000`。
+常用检查：
 
-前端通过 `NEXT_PUBLIC_VOCALIZE_API_BASE_URL` 直接调 FastAPI，不走 Next.js 代理。
-若后端将 `VOCALIZE_WS_BASE_URL` 配置在其他主机，也要相应设置
-`NEXT_PUBLIC_VOCALIZE_WS_BASE_URL`。
+```bash
+.venv/bin/python -m pytest
+cd frontend && npm run lint && npm run build && npm test
+bash -n install/install.sh install/uninstall.sh scripts/build-macos-release.sh
+```
 
-## 贡献
+## 仓库结构
 
-如何提 issue、运行测试、遵守代码风格、提交贡献，见 [CONTRIBUTING.md](CONTRIBUTING.md)。
-Issue 模板和 PR 模板位于 `.github/` 目录。
+```text
+VocalizeAI/
+├── src/vocalize/              # 后端包和任务引擎
+│   ├── providers/             # STT/TTS Provider API clients
+│   ├── llm/                   # OpenAI-compatible streaming client
+│   ├── dialogue/              # planner, preflight, merchant agent, relay
+│   ├── server/                # FastAPI app 和 WebSocket frames
+│   └── config.py              # env 和安装配置加载
+├── macos/                     # macOS 原生语音 provider helper
+├── frontend/                  # React + Vite 网页控制台
+├── install/                   # artifact installer 和 uninstaller
+├── packaging/                 # PyInstaller 打包配置
+├── tools/                     # release 和 CI helper
+├── tests/                     # pytest suite
+├── docs/                      # provider、architecture、release docs
+├── pyproject.toml             # 后端包元数据
+├── uv.lock                    # Python 依赖锁文件
+└── .env.example               # 开发配置模板
+```
 
-## 安全
+## 发布门槛
 
-VocalizeAI 是自部署项目 —— 每个运维者在自己的基础设施上跑自己的后端,
-没有"统一托管实例"可被攻击。任何安全相关发现请通过 GitHub Issues 上报,
-与普通 bug 同一通道,这样每个运维者都能拿到修复。自部署运维者负责在网络/
-代理层(Cloudflare Access、VPN、反向代理认证等)限制可达性。每用户认证属于
-v1.x 范畴(需求 `AUTH-01`)。
+公开发布前，CI 必须通过后端、Provider API、macOS helper、前端、打包/安装和
+public-tree audit。最终 artifact 还必须完成 macOS 签名/公证和人工 clean-install 测试。
 
 ## 许可证
 
-Apache 2.0 —— 见 [LICENSE](LICENSE)。
+Apache 2.0 — 见 [LICENSE](LICENSE)。

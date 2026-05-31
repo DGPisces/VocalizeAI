@@ -1,10 +1,8 @@
 // frontend/components/LanguageToggle.tsx
 
-"use client";
-
 import React from "react";
-import { useLocale } from "next-intl";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useLocale } from "@/src/i18n";
+import { useRouter, usePathname, useSearchParams } from "@/src/router";
 
 const STORAGE_KEY = "preferred_ui_lang";
 

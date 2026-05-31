@@ -1311,7 +1311,7 @@ class DialogueOrchestrator:
         # but the loop itself stays on the EXECUTION_ACTIVE stream.
         try:
             audio_in = self._merchant.pipeline._transport.input_stream()
-            # Plan 04-04: pass transport so SenseVoiceClient can register the
+            # Plan 04-04: pass transport so the STT provider can register the
             # client-side webrtcvad EOS handler.
             try:
                 stt_iter = self._merchant.pipeline._stt.stream_transcribe(  # type: ignore[call-arg]

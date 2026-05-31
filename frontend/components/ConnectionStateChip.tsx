@@ -1,8 +1,6 @@
-"use client";
-
 import React from "react";
 import { Loader2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/src/i18n";
 
 interface Props {
   state: "connected" | "reconnecting" | "disconnected";

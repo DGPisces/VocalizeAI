@@ -1,7 +1,7 @@
 // frontend/components/TranscriptStream.tsx
 
 import React, { useEffect, useMemo, useRef } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/src/i18n";
 import { AlertTriangle, Clock } from "lucide-react";
 import type { TranscriptMessage } from "../lib/state";
 

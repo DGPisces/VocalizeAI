@@ -10,7 +10,7 @@ node_modules/
 .next/
 test-results/
 tests/integration/evidence/
-docs/release/24h-stability-evidence-runs/
+docs/release/*evidence-runs/
 *.tsbuildinfo
 .ruff_cache/
 .pytest_cache/

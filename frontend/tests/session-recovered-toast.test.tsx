@@ -1,12 +1,12 @@
 import React from "react";
 import { act, render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { I18nProvider } from "@/src/i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import zh from "../messages/zh.json";
 import { SessionRecoveredToast } from "../components/SessionRecoveredToast";
 
 const wrap = (ui: React.ReactNode) => (
-  <NextIntlClientProvider locale="zh" messages={zh}>{ui}</NextIntlClientProvider>
+  <I18nProvider locale="zh" messages={zh}>{ui}</I18nProvider>
 );
 
 afterEach(() => {

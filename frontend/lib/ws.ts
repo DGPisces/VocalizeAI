@@ -5,6 +5,7 @@ import type {
   TranscriptMessageRole,
   TranscriptMessageSubtype,
 } from "./state";
+import { readPublicEnv } from "../src/env";
 
 // TranscriptMessageSubtype mirrors backend subtype "filler" frames.
 // TranscriptMessageSubtype mirrors backend subtype "keepalive" frames.
@@ -165,12 +166,12 @@ function hostsMatch(actual: URL, expected: URL): boolean {
 }
 
 export function trustedSessionWsUrl(rawUrl: string, sessionId: string): string {
-  const apiBase = process.env.NEXT_PUBLIC_VOCALIZE_API_BASE_URL;
+  const apiBase = readPublicEnv("VOCALIZE_API_BASE_URL");
   if (!apiBase) {
-    throw new Error("NEXT_PUBLIC_VOCALIZE_API_BASE_URL is required");
+    throw new Error("VITE_VOCALIZE_API_BASE_URL is required");
   }
   const apiUrl = new URL(apiBase);
-  const configuredWsBase = process.env.NEXT_PUBLIC_VOCALIZE_WS_BASE_URL;
+  const configuredWsBase = readPublicEnv("VOCALIZE_WS_BASE_URL");
   const expectedBase = configuredWsBase
     ? new URL(configuredWsBase)
     : new URL(`${apiUrl.protocol === "https:" ? "wss:" : "ws:"}//${apiUrl.host}`);

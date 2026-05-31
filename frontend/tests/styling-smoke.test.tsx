@@ -19,6 +19,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const COMPONENTS_CSS_PATH = resolve(__dirname, "..", "app", "components.css");
+const GLOBALS_CSS_PATH = resolve(__dirname, "..", "app", "globals.css");
 
 /**
  * The full catalogue of component classes from
@@ -120,5 +121,29 @@ describe("styling smoke (Task 0.2)", () => {
       }
     }
     expect(missingBodies).toEqual([]);
+  });
+});
+
+describe("dark mode tokens", () => {
+  const globalsCss = readFileSync(GLOBALS_CSS_PATH, "utf8");
+  const componentsCss = readFileSync(COMPONENTS_CSS_PATH, "utf8");
+
+  it("globals.css supports explicit and system dark mode", () => {
+    expect(globalsCss).toContain(':root[data-theme="dark"]');
+    expect(globalsCss).toContain("@media (prefers-color-scheme: dark)");
+    expect(globalsCss).toContain(':root:not([data-theme="light"]):not([data-theme="dark"])');
+    expect(globalsCss).toContain("color-scheme: dark");
+  });
+
+  it("hard-coded light surfaces use dark-aware variables", () => {
+    expect(globalsCss).toContain("--readiness-bg");
+    expect(globalsCss).toContain("background: var(--readiness-bg)");
+    expect(globalsCss).toContain("--assistant-row-bg");
+    expect(globalsCss).toContain("background: var(--assistant-row-bg)");
+  });
+
+  it("component shimmer respects system dark mode", () => {
+    expect(componentsCss).toContain("@media (prefers-color-scheme: dark)");
+    expect(componentsCss).toContain(':root:not([data-theme="light"]):not([data-theme="dark"]) .skeleton-text::after');
   });
 });

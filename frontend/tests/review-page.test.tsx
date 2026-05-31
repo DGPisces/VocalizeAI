@@ -2,19 +2,19 @@ import React from "react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { NextIntlClientProvider } from "next-intl";
+import { I18nProvider } from "@/src/i18n";
 import zh from "../messages/zh.json";
 import { MockWebSocket } from "./setup";
 import { ReviewPageClient, type ReviewApiClient } from "../app/[locale]/review/[session]/ReviewPageClient";
 import type { GetReviewResponse } from "../lib/api";
 
 const pushMock = vi.fn();
-vi.mock("next/navigation", () => ({
+vi.mock("@/src/router", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
 
 const wrap = (ui: React.ReactNode) => (
-  <NextIntlClientProvider locale="zh" messages={zh}>{ui}</NextIntlClientProvider>
+  <I18nProvider locale="zh" messages={zh}>{ui}</I18nProvider>
 );
 
 function review(overrides: Partial<GetReviewResponse> = {}): GetReviewResponse {

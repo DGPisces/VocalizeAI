@@ -2,7 +2,7 @@
 
 Task 13 covers the framing layer in isolation (a fake orchestrator runner).
 Task 14 swaps the fake out for the real DialogueOrchestrator wiring.
-Task 17 adds a real-GPU integration variant gated on env vars.
+Provider API integration remains testable through the scripted pipeline fakes.
 """
 from __future__ import annotations
 
@@ -949,10 +949,6 @@ def _planner_tool_names(tools: Any) -> set[str]:
     return {getattr(tool, "name", "") for tool in (tools or [])}
 
 
-@pytest.mark.skipif(
-    "REAL_GPU" in os.environ,
-    reason="REAL_GPU mode runs the variant in test_real_gpu_smoke",
-)
 def test_runner_drives_orchestrator_through_one_text_turn(
     fake_voice_pipeline_factory,
     monkeypatch,
@@ -1016,7 +1012,7 @@ def test_runner_waits_for_call_listening_before_merchant_execution() -> None:
 
     from fastapi import FastAPI
     from tests.conftest import make_scripted_llm
-    from tests.test_dialogue_orchestrator import _task_planner_script
+    from tests.test_dialogue_orchestrator import _task_planner_script, _text_chunks
     from tests.test_pipeline import FakeSTT, FakeTTS
     from vocalize.pipeline import VoicePipeline
     from vocalize.server.state import SessionRegistry
@@ -1026,7 +1022,7 @@ def test_runner_waits_for_call_listening_before_merchant_execution() -> None:
     s = registry.create()
     registry.set_task(s.session_id, "帮我订海底捞")
 
-    llm = make_scripted_llm(_task_planner_script())
+    llm = make_scripted_llm(_task_planner_script(), _text_chunks(""))
 
     def user_pipeline_factory(transport):
         return VoicePipeline(
@@ -1098,7 +1094,7 @@ def test_runner_drops_pre_handover_audio_before_merchant_stt() -> None:
 
     from fastapi import FastAPI
     from tests.conftest import make_scripted_llm
-    from tests.test_dialogue_orchestrator import _task_planner_script
+    from tests.test_dialogue_orchestrator import _task_planner_script, _text_chunks
     from tests.test_pipeline import FakeSTT, FakeTTS
     from vocalize.pipeline import VoicePipeline
     from vocalize.server.state import SessionRegistry
@@ -1121,7 +1117,7 @@ def test_runner_drops_pre_handover_audio_before_merchant_stt() -> None:
     s = registry.create()
     registry.set_task(s.session_id, "帮我订海底捞")
 
-    llm = make_scripted_llm(_task_planner_script())
+    llm = make_scripted_llm(_task_planner_script(), _text_chunks(""))
     merchant_stt = FirstBlockMerchantSTT()
 
     def user_pipeline_factory(transport):
@@ -1188,7 +1184,7 @@ def test_runner_ignores_call_listening_before_readiness_passes() -> None:
 
     from fastapi import FastAPI
     from tests.conftest import make_scripted_llm
-    from tests.test_dialogue_orchestrator import _task_planner_script
+    from tests.test_dialogue_orchestrator import _task_planner_script, _text_chunks
     from tests.test_pipeline import FakeSTT, FakeTTS
     from vocalize.pipeline import VoicePipeline
     from vocalize.server.state import SessionRegistry
@@ -1211,7 +1207,7 @@ def test_runner_ignores_call_listening_before_readiness_passes() -> None:
     s = registry.create()
     registry.set_task(s.session_id, "帮我订海底捞")
 
-    llm = make_scripted_llm(_task_planner_script())
+    llm = make_scripted_llm(_task_planner_script(), _text_chunks(""))
     merchant_stt = FirstBlockMerchantSTT()
 
     def user_pipeline_factory(transport):
@@ -1484,16 +1480,17 @@ def test_ws_integration_same_lang_no_translation() -> None:
     from tests.test_dialogue_orchestrator import _task_planner_script
     from vocalize.llm.base import FinishChunk, TextDelta
 
-    non_planner_calls = 0
+    merchant_calls = 0
 
     class _CountingLLM:
         async def stream_chat(self, messages=None, tools=None, **kwargs):
-            nonlocal non_planner_calls
+            nonlocal merchant_calls
             if "emit_task_schema" in _planner_tool_names(tools):
                 for chunk in _task_planner_script():
                     yield chunk
                 return
-            non_planner_calls += 1
+            if "request_user_clarification" in _planner_tool_names(tools):
+                merchant_calls += 1
             yield TextDelta(text="ok")
             yield FinishChunk(reason="stop")
 
@@ -1567,12 +1564,16 @@ def test_ws_integration_same_lang_no_translation() -> None:
         if frame.get("subtype") == "translation"
     ]
     assert translations == []
-    assert non_planner_calls == 1
+    assert merchant_calls == 1
 
 
 def test_ws_integration_full_callback_chain(monkeypatch: pytest.MonkeyPatch) -> None:
     from tests.conftest import make_scripted_llm
-    from tests.test_dialogue_orchestrator import _task_planner_script, _tool_call_chunks
+    from tests.test_dialogue_orchestrator import (
+        _task_planner_script,
+        _text_chunks,
+        _tool_call_chunks,
+    )
     from vocalize.llm.base import FinishChunk, TextDelta, ToolCallDelta
 
     async def instant_timeout(
@@ -1591,6 +1592,7 @@ def test_ws_integration_full_callback_chain(monkeypatch: pytest.MonkeyPatch) -> 
 
     llm = make_scripted_llm(
         _task_planner_script(),
+        _text_chunks(""),
         _tool_call_chunks(
             0,
             "call_clarify",
@@ -1672,16 +1674,34 @@ def test_ws_integration_full_callback_chain(monkeypatch: pytest.MonkeyPatch) -> 
             )
             assumption_id = assumption["assumption"]["id"]
 
-            ws.send_text(json.dumps({"type": "hangup"}))
-            received.extend(_drain_mixed_until(
-                recv,
-                target=lambda item: (
+            def is_post_call_review(item: dict[str, Any]) -> bool:
+                return (
                     item.get("kind") == "json"
                     and item["frame"].get("type") == "phase_change"
                     and item["frame"].get("current") == "post_call_review"
-                ),
-                timeout_s=2.0,
-            ))
+                )
+
+            import time as _t
+
+            post_call_review_seen = any(is_post_call_review(item) for item in received)
+            deadline = _t.monotonic() + 0.5
+            while not post_call_review_seen and _t.monotonic() < deadline:
+                msg = recv(timeout=0.05)
+                if msg is None:
+                    continue
+                payload = _ws_message_payload(msg)
+                if payload is None:
+                    continue
+                received.append(payload)
+                post_call_review_seen = is_post_call_review(payload)
+
+            if not post_call_review_seen:
+                ws.send_text(json.dumps({"type": "hangup"}))
+                received.extend(_drain_mixed_until(
+                    recv,
+                    target=is_post_call_review,
+                    timeout_s=2.0,
+                ))
 
             ws.send_text(json.dumps({
                 "type": "confirm_assumption",
@@ -1690,20 +1710,59 @@ def test_ws_integration_full_callback_chain(monkeypatch: pytest.MonkeyPatch) -> 
                 "correction": "6",
                 "note": None,
             }))
+
+            def callback_correction_ready(item: dict[str, Any]) -> bool:
+                if item.get("kind") != "json":
+                    return False
+                frame = item["frame"]
+                if frame.get("type") == "pending_callback_added":
+                    callback = frame.get("callback") or {}
+                    return (
+                        callback.get("assumption_id") == assumption_id
+                        and callback.get("correction") == "6"
+                    )
+                if frame.get("type") != "state_update":
+                    return False
+                callbacks = (frame.get("diff") or {}).get("pending_callbacks") or []
+                return any(
+                    callback.get("assumption_id") == assumption_id
+                    and callback.get("correction") == "6"
+                    for callback in callbacks
+                )
+
             received.extend(_drain_mixed_until(
                 recv,
-                target=lambda item: (
-                    item.get("kind") == "json"
-                    and item["frame"].get("type") == "pending_callback_added"
-                ),
+                target=callback_correction_ready,
                 timeout_s=2.0,
             ))
-            callback_frame = next(
-                item["frame"] for item in received
-                if item.get("kind") == "json"
-                and item["frame"].get("type") == "pending_callback_added"
-            )
-            callback_id = callback_frame["callback"]["id"]
+
+            callback_id = None
+            for item in reversed(received):
+                if item.get("kind") != "json":
+                    continue
+                frame = item["frame"]
+                if frame.get("type") == "pending_callback_added":
+                    callback = frame["callback"]
+                    if (
+                        callback.get("assumption_id") == assumption_id
+                        and callback.get("correction") == "6"
+                    ):
+                        callback_id = callback["id"]
+                        break
+                if frame.get("type") == "state_update":
+                    callbacks = (
+                        (frame.get("diff") or {}).get("pending_callbacks") or []
+                    )
+                    for callback in callbacks:
+                        if (
+                            callback.get("assumption_id") == assumption_id
+                            and callback.get("correction") == "6"
+                        ):
+                            callback_id = callback["id"]
+                            break
+                if callback_id is not None:
+                    break
+            assert callback_id is not None
 
             ws.send_text(json.dumps({
                 "type": "trigger_callback",
@@ -1772,11 +1831,12 @@ def test_ws_integration_merchant_ai_audio_suppressed_during_user_takeover() -> N
     import time as _t
 
     from tests.conftest import make_scripted_llm
-    from tests.test_dialogue_orchestrator import _task_planner_script
+    from tests.test_dialogue_orchestrator import _task_planner_script, _text_chunks
     from vocalize.llm.base import FinishChunk, TextDelta
 
     llm = make_scripted_llm(
         _task_planner_script(),
+        _text_chunks(""),
         [TextDelta(text="AI-QUEUED-DURING-TAKEOVER"), FinishChunk(reason="stop")],
         [TextDelta(text="AI-FRESH-AFTER-TAKEOVER"), FinishChunk(reason="stop")],
     )
@@ -2219,7 +2279,7 @@ def test_runner_spoken_preflight_ignores_ws_binary_audio_and_uses_text_input() -
 
     from fastapi import FastAPI
     from tests.conftest import make_scripted_llm
-    from tests.test_dialogue_orchestrator import _task_planner_script
+    from tests.test_dialogue_orchestrator import _task_planner_script, _text_chunks
     from tests.test_pipeline import FakeTTS
     from vocalize.pipeline import VoicePipeline
     from vocalize.server.state import SessionRegistry
@@ -2253,7 +2313,7 @@ def test_runner_spoken_preflight_ignores_ws_binary_audio_and_uses_text_input() -
                 yield None
 
     user_stt = TransportDrivenSTT()
-    llm = make_scripted_llm(_task_planner_script())
+    llm = make_scripted_llm(_task_planner_script(), _text_chunks(""))
 
     def user_pipeline_factory(transport):
         return VoicePipeline(
@@ -2429,70 +2489,3 @@ def test_b2_loopback_speak_text_sends_ai_to_user_audio() -> None:
         for msg in seen_texts
     )
     assert seen_user_audio is True
-
-
-# -- Task 17: Real-GPU smoke test ----------------------------------------------
-
-
-@pytest.mark.skipif(
-    "GPU_HOST" not in os.environ,
-    reason="real-GPU smoke is opt-in via GPU_HOST",
-)
-def test_real_gpu_smoke_through_ws() -> None:
-    """Connect WS, post a task, send a preflight text input, then observe at
-    least one ``transcript_update`` from the real SenseVoice + DeepSeek +
-    CosyVoice stack within an overall deadline.
-
-    Without an explicit ``text_input``, the orchestrator can sit waiting on
-    user input forever — the receive loop would block on
-    ``ws.receive_json`` and the test session would hang. We send one text
-    line right after the WS opens to drive preflight forward, and we cap
-    the whole observation phase at ``DEADLINE_S`` so a stuck stack fails
-    the test instead of stalling CI.
-
-    Run with:
-        GPU_HOST=100.x.y.z SENSEVOICE_WS_PORT=8000 COSYVOICE_WS_PORT=8001 pytest -k real_gpu_smoke
-    """
-    import time as _t
-
-    from vocalize.server import create_app
-
-    # Real DeepSeek + task-planner + preflight can exceed 2 minutes even when
-    # all services are healthy. This smoke is opt-in and not part of normal CI,
-    # so prefer a realistic default over a flaky short gate.
-    DEADLINE_S = float(os.getenv("VOCALIZE_REAL_GPU_SMOKE_DEADLINE_S", "180"))
-
-    app = create_app()
-    with TestClient(app) as tc:
-        resp = tc.post("/api/sessions")
-        assert resp.status_code == 200
-        sid = resp.json()["session_id"]
-
-        resp = tc.post(
-            f"/api/sessions/{sid}/task",
-            json={"task": "帮我订海底捞"},
-        )
-        assert resp.status_code == 200
-
-        with tc.websocket_connect(f"/ws/sessions/{sid}") as ws:
-            ws.send_text(json.dumps({
-                "type": "text_input",
-                "text": "晚上7点4个人",
-                "lang_hint": "zh",
-            }))
-
-            recv = _make_bounded_receiver(ws)
-            deadline = _t.monotonic() + DEADLINE_S
-            seen_transcript = False
-            while _t.monotonic() < deadline:
-                remaining = max(0.05, deadline - _t.monotonic())
-                msg = recv(timeout=remaining)
-                if msg is None:
-                    break
-                if msg.get("type") == "transcript_update":
-                    seen_transcript = True
-                    break
-            assert seen_transcript, (
-                "no transcript_update within "
-                f"{DEADLINE_S}s — GPU stack may be unresponsive"
-            )

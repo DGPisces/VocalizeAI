@@ -2,207 +2,146 @@
 
 > Chinese version: [README.zh-CN.md](README.zh-CN.md)
 
-VocalizeAI is a bilingual (zh/en) AI phone agent. v1 transforms it from a
-restaurant-only booking bot into a universal phone-task engine: describe any
-phone task in natural language, and the AI plans the schema, collects the
-required info from you, and handles the call with the merchant — relaying
-across languages when needed.
+VocalizeAI is a Mac-first AI phone-task assistant. You describe what the call
+should accomplish, the app collects any missing details, then drives the task
+through a local web console with live transcript, clarification, takeover, and
+post-call review.
 
-## Current Status
+The public `v0.1.0` path is intentionally simple: install the macOS artifact,
+configure your OpenAI-compatible LLM endpoint, and use the built-in macOS
+speech provider. STT and TTS are exposed through the Vocalize Provider API, so
+advanced users can replace speech services later without changing the task
+engine.
 
-**v1 ships** the universal phone-task engine, Web console, and a Linux-host
-orchestrator deployment (Raspberry Pi was the original reference target;
-any modern Linux host with systemd works). The backend 5-layer prompt architecture
-(task_planner / preflight / merchant_agent / clarification_collector / relay)
-handles any phone task — restaurant bookings, service appointments, balance
-inquiries, status checks, and more. An OSS mirror is available at
-[github.com/DGPisces/VocalizeAI](https://github.com/DGPisces/VocalizeAI)
-under Apache 2.0.
+## Install on macOS
 
-## Quick Start
-
-**Prerequisites:** Python 3.11+, Node 20+, git, curl. Optional: `uv` (auto-installed by the script).
+Download the release zip and `SHA256SUMS` from the GitHub Release page, then run
+the installer from the folder where you want `VocalizeAI/` to be created.
 
 ```bash
-# 1. Install all dependencies in one step
+bash install/install.sh \
+  --artifact VocalizeAI-0.1.0-macos-arm64.zip \
+  --checksums SHA256SUMS
+```
+
+Then configure and start:
+
+```bash
+cd VocalizeAI
+./vocalize setup
+./vocalize doctor
+./vocalize start
+```
+
+`setup` asks for:
+
+- LLM base URL
+- LLM API key
+- LLM model
+- whether to enable or disable LLM thinking mode
+- local web port
+- whether to add an optional global `vocalize` command
+- whether `start` should open the browser automatically
+
+You do not choose a speech model in the default macOS install. VocalizeAI starts
+the bundled macOS speech helper and connects to it through the Provider API.
+When browser auto-open is enabled, `start` waits for the local server health
+endpoint before opening the page.
+
+## Update or Uninstall
+
+```bash
+# update from a newer release artifact while preserving config/logs/cache
+./vocalize update --artifact ../VocalizeAI-0.1.1-macos-arm64.zip --checksums ../SHA256SUMS
+
+# remove this local install and the optional recorded global symlink
+./vocalize uninstall
+# or
+bash uninstall.sh
+```
+
+The installer is local by default. It does not install global Python packages,
+Node packages, launch agents, system services, or shell modifications. The
+optional global command is a removable symlink recorded in the install config.
+
+## What the App Provides
+
+- Mac-first local install under `VocalizeAI/`
+- LLM-only setup for ordinary users
+- Native macOS STT/TTS through a bundled helper
+- Provider API boundary for custom STT/TTS services
+- React + Vite web console served by the packaged backend
+- Task creation, readiness, live transcript, clarification, manual takeover,
+  hangup/end, diagnostics, settings, and post-call review
+- Chinese and English UI
+
+## Provider API
+
+The speech boundary is documented in [docs/provider-api.md](docs/provider-api.md).
+The default helper implements the same API that custom providers use:
+
+- health and capability discovery
+- realtime STT partial/final transcript events
+- streaming TTS events
+- cancellation and structured errors
+
+For `v0.1.0`, macOS is the supported public platform. Other platforms can be
+added later by implementing the same Provider API.
+
+## Development
+
+Source development still uses a normal local toolchain.
+
+```bash
 bash install/dev-install.sh
-
-# 2. Edit .env and set at minimum: OPENAI_API_KEY
-#    (dev-install.sh already copied .env.example -> .env if it was absent)
 $EDITOR .env
-
-# 3. Start the backend
 source .venv/bin/activate
-uvicorn vocalize.main:app --host 127.0.0.1 --port 8000 --reload
-
-# 4. Start the frontend (second terminal)
-cd frontend && npm run dev
-
-# 5. Verify the installation
-bash scripts/smoke.sh
-# Exit 0 = working dev environment (≤15 min from clone to passing smoke)
-```
-
-**Reproducible install:** after activating the venv, run `uv pip sync uv.lock` for
-deterministic Python dependency installation pinned to the committed lock file.
-
-For the full Mac/Linux runbook with env-var descriptions and troubleshooting, see
-[docs/deploy/local.md](docs/deploy/local.md).
-
-## v1 — Universal Phone Agent (CLI)
-
-```bash
-# (in project venv)
-export OPENAI_BASE_URL="https://api.deepseek.com"
-export OPENAI_API_KEY="..."
-python -m demos.phase5_universal_agent_cli
-```
-
-The demo runs the full universal phone-agent engine in headless mode:
-
-1. You describe a task in natural language ("book a 7 pm table for 4 at
-   Joy Sushi").
-2. Layer 1 (`task_planner`) emits a `TaskSchema` — the slots to collect,
-   the readiness criteria, and the relay strategy.
-3. Layer 2 (`preflight`) drives a user-side conversation until all
-   high-criticality slots are filled.
-4. Layer 3 (`merchant_agent`) places and runs the call.
-5. Layers 4–5 (`clarification_collector`, `relay`) handle mid-call
-   clarifications and cross-lingual translation.
-
-## Repository layout
-
-```
-VocalizeAI/
-├── src/vocalize/              # main backend package (service-boundary modules)
-│   ├── transports/            # audio I/O — local mic, speakerphone bridge
-│   ├── stt/                   # speech-to-text — SenseVoice streaming
-│   ├── llm/                   # LLM — OpenAI-compatible streaming + tool-calling
-│   ├── tts/                   # text-to-speech — CosyVoice streaming
-│   ├── dialogue/              # orchestrator, state machine, prompts, tools
-│   ├── reflection/            # post-call review
-│   ├── server/                # FastAPI app — REST sessions + WS frames
-│   ├── pipeline.py            # asyncio main pipeline
-│   ├── config.py              # env / .env loading
-│   └── logger.py              # system + dialogue logging
-├── frontend/                  # Next.js 14 web console
-│   ├── app/                   # App Router routes
-│   ├── components/            # BrowserAudioBridge, LiveConsole, etc.
-│   ├── lib/                   # WS client, audio utils, REST client
-│   ├── messages/              # next-intl zh/en bundles
-│   └── tests/                 # vitest unit tests
-├── demos/                     # runnable demos
-├── infra/                     # deployment scripts (GPU node, Linux orchestrator)
-├── tests/                     # pytest suite
-│   └── integration/           # Playwright laptop-loopback + AI-merchant harness
-├── install/                   # one-shot install scripts
-│   ├── dev-install.sh         # Mac/Linux local dev setup
-│   └── install.sh             # Linux production deploy (Raspberry Pi is one example target)
-├── docs/                      # architecture, deploy guides, release evidence
-├── scripts/                   # smoke test and utility scripts
-│   └── smoke.sh               # post-install end-to-end verification
-├── pyproject.toml             # single source of truth for backend dependencies
-├── uv.lock                    # pinned Python dependency lock
-└── .env.example               # env-var template (17 keys)
-```
-
-## Self-host quickstart
-
-### Required env vars for non-localhost deployment
-
-| Variable | Purpose |
-|----------|---------|
-| `VOCALIZE_WS_BASE_URL` | WebSocket base URL returned to clients (e.g., `wss://api.example.com`); required in non-localhost mode to prevent Host-header spoofing |
-| `VOCALIZE_CORS_ORIGINS` | Comma-separated allowed CORS origins; **required** in non-localhost mode (no default) |
-
-See `.env.example` for the full env-var inventory including LLM, GPU service,
-and frontend build-time variables.
-
-For the full Linux-host production deployment runbook (Raspberry Pi is one
-example target), see [docs/deploy/linux.md](docs/deploy/linux.md).
-
-### GPU node requirements
-
-SenseVoice (STT) and CosyVoice (TTS) run as separate GPU services and connect
-to the orchestrator host over Tailscale. GPU services are optional for local dev
-(the LLM path works without them). See [docs/deploy/linux.md](docs/deploy/linux.md)
-for the GPU node setup.
-
-## Run the dev server
-
-```bash
-source .venv/bin/activate
-
-# optional: configure GPU services so /health reports gpu_reachable=true
-export GPU_HOST=100.x.y.z            # Tailscale IP of GPU node
-export SENSEVOICE_WS_PORT=8000       # STT service
-export COSYVOICE_WS_PORT=8001        # TTS service
-
 uvicorn vocalize.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 In another terminal:
 
 ```bash
-curl -s http://127.0.0.1:8000/health
-# → {"ok": true, "gpu_reachable": true}
-
-SESSION=$(curl -s -X POST http://127.0.0.1:8000/api/sessions | python3 -c \
-  'import sys,json; print(json.load(sys.stdin)["session_id"])')
-
-curl -s -X POST "http://127.0.0.1:8000/api/sessions/$SESSION/task" \
-  -H 'Content-Type: application/json' \
-  -d '{"task":"帮我订海底捞"}'
-
-# brew install websocat  (macOS) or  apt install websocat  (Linux)
-websocat ws://127.0.0.1:8000/ws/sessions/$SESSION
-# → server emits state_update / transcript_update / readiness_change frames
-
-# Or run the full smoke test:
-bash scripts/smoke.sh
-```
-
-For the system architecture — 5-layer dialogue pipeline, TaskPhase state machine,
-WS frame catalogue, and REST surface — see [docs/architecture.md](docs/architecture.md).
-
-## Run the web console
-
-Terminal 1:
-
-```bash
-source .venv/bin/activate
-uvicorn vocalize.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-Terminal 2:
-
-```bash
 cd frontend
-export NEXT_PUBLIC_VOCALIZE_API_BASE_URL=http://127.0.0.1:8000
-npm run dev -- --hostname 127.0.0.1 --port 3000
+npm ci
+npm run dev -- --host 127.0.0.1 --port 3000
 ```
 
-Open `http://127.0.0.1:3000`.
+Useful checks:
 
-The frontend calls FastAPI directly through `NEXT_PUBLIC_VOCALIZE_API_BASE_URL`;
-it does not proxy `/api` through Next.js. If the backend is configured with
-`VOCALIZE_WS_BASE_URL` on a different host, set the matching browser allowlist
-with `NEXT_PUBLIC_VOCALIZE_WS_BASE_URL`.
+```bash
+.venv/bin/python -m pytest
+cd frontend && npm run lint && npm run build && npm test
+bash -n install/install.sh install/uninstall.sh scripts/build-macos-release.sh
+```
 
-## Contributing
+## Repository Layout
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for how to file issues, run tests,
-follow code style, and submit contributions. Issue + PR templates live under `.github/`.
+```text
+VocalizeAI/
+├── src/vocalize/              # backend package and task engine
+│   ├── providers/             # STT/TTS Provider API clients
+│   ├── llm/                   # OpenAI-compatible streaming client
+│   ├── dialogue/              # planner, preflight, merchant agent, relay
+│   ├── server/                # FastAPI app and WebSocket frames
+│   └── config.py              # env and install config loading
+├── macos/                     # native macOS speech provider helper
+├── frontend/                  # React + Vite web console
+├── install/                   # artifact installer and uninstaller
+├── packaging/                 # PyInstaller packaging config
+├── tools/                     # release and CI helpers
+├── tests/                     # pytest suite
+├── docs/                      # provider, architecture, release docs
+├── pyproject.toml             # backend package metadata
+├── uv.lock                    # pinned Python dependency lock
+└── .env.example               # development config template
+```
 
-## Security
+## Release Gates
 
-VocalizeAI is self-deploy: every operator runs their own backend on
-their own infrastructure, and there is no centrally hosted instance to
-defend. Report any security-relevant finding via GitHub Issues — same
-as any other bug — so every operator can pick up the fix. Self-deploy
-operators are responsible for restricting reachability at the network
-or proxy layer (Cloudflare Access, VPN, reverse-proxy auth, etc.).
-Per-user authentication is v1.x scope (requirement `AUTH-01`).
+Before a public release, CI must pass backend, Provider API, macOS helper,
+frontend, packaging/installer, and public-tree audit checks. The final artifact
+also requires signed/notarized macOS packaging and human clean-install testing.
 
 ## License
 

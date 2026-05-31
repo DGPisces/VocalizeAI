@@ -1,7 +1,7 @@
 // frontend/components/UserTakeoverButton.tsx — new
 
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/src/i18n";
 
 interface Props {
   active: boolean;
