@@ -217,6 +217,7 @@ def test_cli_start_foreground_applies_install_env(monkeypatch, tmp_path) -> None
         "OPENAI_API_KEY=sk-test\nVOCALIZE_PORT=9090\n"
     )
     monkeypatch.setenv("VOCALIZE_INSTALL_ROOT", str(install_root))
+    monkeypatch.setenv("VOCALIZE_PORT", "8080")
     seen_env: list[tuple[str | None, str | None]] = []
     monkeypatch.setitem(
         sys.modules,

@@ -309,7 +309,7 @@ def _install_env(paths: InstallPaths) -> dict[str, str]:
     env["LOG_DIR"] = str(paths.logs_dir)
     if paths.env_file.is_file():
         for key, value in _read_env_file(paths.env_file).items():
-            env.setdefault(key, value)
+            env[key] = value
         env["VOCALIZE_ENV_FILE"] = str(paths.env_file)
     provider = paths.bin_dir / "vocalize-mac-speech-provider"
     if provider.is_file():
