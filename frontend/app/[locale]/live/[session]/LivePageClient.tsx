@@ -1,8 +1,13 @@
-"use client";
-
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useRouter, useSearchParams } from "@/src/router";
+import { useTranslations } from "@/src/i18n";
+import {
+  Activity,
+  CheckCircle2,
+  PhoneCall,
+  Settings2,
+  Stethoscope,
+} from "lucide-react";
 
 import {
   applyServerFrame,
@@ -530,6 +535,24 @@ export function LivePageClient({
     state.user_takeover_active &&
     effectiveMerchantLang !== null &&
     effectiveUserLang !== effectiveMerchantLang;
+  const copy = focusedCopy(locale);
+  const taskText = state.task_description?.trim() || copy.emptyTask;
+  const readinessPercent = Math.round(
+    Math.max(0, Math.min(1, state.readiness_confidence)) * 100,
+  );
+  const readinessStatus = state.readiness_passed
+    ? t("readiness.ready")
+    : t("readiness.waiting");
+  const missingCriticalText = state.readiness_missing_critical.length > 0
+    ? state.readiness_missing_critical.join(", ")
+    : copy.noMissingCritical;
+  const outcomeText = state.completion_summary?.trim() ||
+    (state.phase === "post_call_review"
+      ? copy.reviewReady
+      : copy.outcomePending);
+  const activeTranscriptCount = state.transcripts.filter(
+    (message) => message.subtype !== "translation",
+  ).length;
 
   useEffect(() => {
     if (
@@ -627,9 +650,6 @@ export function LivePageClient({
             ? t("post_call_review.empty_state")
             : t("errors.unknown")}
         </h2>
-        {state.phase === "completed" && state.completion_summary ? (
-          <p>{state.completion_summary}</p>
-        ) : null}
         <button
           type="button"
           className="chip-btn chip-btn--primary"
@@ -663,38 +683,167 @@ export function LivePageClient({
         <SessionRecoveredToast onDismiss={() => setShowRecoveredToast(false)} />
       ) : null}
 
-      <header className="topbar live-page__topbar">
-        <span className="brand">{t("appName")}</span>
-        <MerchantLangBadge value={merchantLang} onChange={setMerchantLang} />
-        <ReadinessIndicator
-          passed={state.readiness_passed}
-          missing_critical={state.readiness_missing_critical}
-          confidence={state.readiness_confidence}
-        />
-        <ConnectionStateChip state={state.connection_state} />
-        <LanguageToggle />
-        <button
-          type="button"
-          className="chip"
-          aria-label={t("settings.title")}
-          onClick={() => setSettingsOpen(true)}
-        >
-          ⚙︎
-        </button>
+      <header className="focused-header live-page__topbar">
+        <a className="focused-brand" href={`/${locale}/`} aria-label="VocalizeAI home">
+          <span className="focused-brand__mark">V</span>
+          <span>
+            <strong>{t("appName")}</strong>
+            <small>{copy.headerSubtitle}</small>
+          </span>
+        </a>
+        <span className="focused-status">
+          {readinessStatus} · {phaseLabel(state.phase, locale)}
+        </span>
+        <div className="focused-header__actions">
+          <MerchantLangBadge value={merchantLang} onChange={setMerchantLang} />
+          <LanguageToggle />
+          <button
+            type="button"
+            className="focused-icon-button"
+            aria-label={copy.doctor}
+          >
+            <Stethoscope aria-hidden size={17} strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            className="focused-icon-button"
+            aria-label={t("settings.title")}
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings2 aria-hidden size={17} strokeWidth={2} />
+          </button>
+        </div>
       </header>
 
+      <section className="focused-hero">
+        <div className="focused-task">
+          <span className="focused-section-label">{copy.currentTask}</span>
+          <h1>{taskText}</h1>
+          <div className="focused-task-row">
+            <span>{copy.taskHint}</span>
+            {state.phase === "ready_to_dial" ? (
+              <button
+                type="button"
+                className="focused-button focused-button--primary"
+                aria-label={copy.openHandover}
+                onClick={() => setHandoverSheetOpen(true)}
+                disabled={!state.readiness_passed}
+              >
+                <PhoneCall aria-hidden size={17} strokeWidth={2} />
+                {t("handover.takeover_button")}
+              </button>
+            ) : null}
+          </div>
+        </div>
+        <aside className="focused-readiness" aria-label={copy.readiness}>
+          <div className="focused-panel-heading">
+            <span>
+              <Activity aria-hidden size={17} strokeWidth={2} />
+              {copy.readiness}
+            </span>
+            <strong>{readinessPercent}%</strong>
+          </div>
+          <ReadinessIndicator
+            passed={state.readiness_passed}
+            missing_critical={state.readiness_missing_critical}
+            confidence={state.readiness_confidence}
+          />
+          <p>{missingCriticalText}</p>
+        </aside>
+      </section>
+
       {error ? (
-        <div className="alert alert--bad" role="alert">{error}</div>
+        <div className="alert alert--bad focused-alert" role="alert">{error}</div>
       ) : null}
 
-      {showSummaryBanner ? (
-        <PreflightSummaryBanner
-          slots={state.slots}
-          preflight_history={state.preflight_history}
-        />
-      ) : null}
+      <div className="focused-grid">
+        <section className="focused-session" aria-label={copy.liveSession}>
+          <div className="focused-panel-heading">
+            <span>
+              <PhoneCall aria-hidden size={17} strokeWidth={2} />
+              {copy.liveSession}
+            </span>
+            <ConnectionStateChip state={state.connection_state} />
+          </div>
 
-      <div className="live-page__main">{main}</div>
+          <div className="live-page__main focused-session__body">{main}</div>
+
+          {isCallPhase ? (
+            <footer className="live-page__footer focused-call-controls">
+              {takeoverControlsEnabled ? (
+                <UserTakeoverButton
+                  active={state.user_takeover_active}
+                  onToggle={onUserTakeoverToggle}
+                />
+              ) : null}
+              {showCrossLangTakeoverNotice ? (
+                <p className="alert alert--warn live-page__takeover-notice" role="note">
+                  {t("user_takeover.relay_hint")}
+                </p>
+              ) : null}
+              <TextSupplementInput
+                onSend={sendText}
+                phase={state.phase}
+                userLang={state.user_lang}
+                mode={
+                  takeoverControlsEnabled && state.user_takeover_active
+                    ? "user_takeover"
+                    : "default"
+                }
+              />
+              <HangupButton onConfirm={onHangup} />
+            </footer>
+          ) : null}
+        </section>
+
+        <aside className="focused-side" aria-label={copy.outcomeAndDiagnostics}>
+          <section className="focused-panel">
+            <div className="focused-panel-heading">
+              <span>
+                <CheckCircle2 aria-hidden size={17} strokeWidth={2} />
+                {copy.outcome}
+              </span>
+              <strong>{phaseLabel(state.phase, locale)}</strong>
+            </div>
+            <p className="focused-outcome">{outcomeText}</p>
+            <div className="focused-metric-list">
+              <span>{copy.assumptions}<strong>{state.uncertain_assumptions.length}</strong></span>
+              <span>{copy.callbacks}<strong>{state.pending_callbacks.length}</strong></span>
+              <span>{copy.transcripts}<strong>{activeTranscriptCount}</strong></span>
+            </div>
+          </section>
+
+          <section className="focused-panel">
+            <div className="focused-panel-heading">
+              <span>
+                <Activity aria-hidden size={17} strokeWidth={2} />
+                {copy.diagnostics}
+              </span>
+            </div>
+            <dl className="focused-diagnostics">
+              <div>
+                <dt>{copy.provider}</dt>
+                <dd>{copy.providerValue}</dd>
+              </div>
+              <div>
+                <dt>{copy.connection}</dt>
+                <dd>{state.connection_state}</dd>
+              </div>
+              <div>
+                <dt>{copy.autoTranslate}</dt>
+                <dd>{state.auto_translate_merchant ? copy.on : copy.off}</dd>
+              </div>
+            </dl>
+          </section>
+
+          {showSummaryBanner ? (
+            <PreflightSummaryBanner
+              slots={state.slots}
+              preflight_history={state.preflight_history}
+            />
+          ) : null}
+        </aside>
+      </div>
 
       {showHandover ? (
         <HandoverPanel
@@ -703,33 +852,6 @@ export function LivePageClient({
           busy={micPreparing}
           error={micError}
         />
-      ) : null}
-
-      {isCallPhase ? (
-        <footer className="live-page__footer">
-          {takeoverControlsEnabled ? (
-            <UserTakeoverButton
-              active={state.user_takeover_active}
-              onToggle={onUserTakeoverToggle}
-            />
-          ) : null}
-          {showCrossLangTakeoverNotice ? (
-            <p className="alert alert--warn live-page__takeover-notice" role="note">
-              {t("user_takeover.relay_hint")}
-            </p>
-          ) : null}
-          <TextSupplementInput
-            onSend={sendText}
-            phase={state.phase}
-            userLang={state.user_lang}
-            mode={
-              takeoverControlsEnabled && state.user_takeover_active
-                ? "user_takeover"
-                : "default"
-            }
-          />
-          <HangupButton onConfirm={onHangup} />
-        </footer>
       ) : null}
 
       {state.active_clarification ? (
@@ -787,4 +909,89 @@ function isPreflight(phase: string): boolean {
     phase === "collecting" ||
     phase === "ready_to_dial"
   );
+}
+
+function phaseLabel(phase: string, locale: string): string {
+  const zh: Record<string, string> = {
+    draft: "草稿",
+    task_planning: "任务规划",
+    collecting: "收集信息",
+    ready_to_dial: "可接管",
+    execution_active: "通话中",
+    needs_clarification: "需要确认",
+    await_user_clarification: "等待回复",
+    post_call_review: "复盘",
+    callback_active: "回拨中",
+    completed: "完成",
+    failed: "失败",
+  };
+  const en: Record<string, string> = {
+    draft: "Draft",
+    task_planning: "Planning",
+    collecting: "Collecting",
+    ready_to_dial: "Ready",
+    execution_active: "Live",
+    needs_clarification: "Clarify",
+    await_user_clarification: "Waiting",
+    post_call_review: "Review",
+    callback_active: "Callback",
+    completed: "Complete",
+    failed: "Failed",
+  };
+  return (locale === "en" ? en : zh)[phase] ?? phase;
+}
+
+function focusedCopy(locale: string) {
+  if (locale === "en") {
+    return {
+      headerSubtitle: "Local speech · LLM",
+      currentTask: "Task",
+      emptyTask: "Enter the goal and required details.",
+      taskHint: "Missing fields appear on the right.",
+      readiness: "Readiness",
+      noMissingCritical: "No critical fields are missing.",
+      reviewReady: "Review the result.",
+      outcomePending: "Waiting for result.",
+      liveSession: "Live session",
+      outcomeAndDiagnostics: "Result",
+      outcome: "Outcome",
+      assumptions: "Checks",
+      callbacks: "Callbacks",
+      transcripts: "Turns",
+      diagnostics: "Diagnostics",
+      provider: "Speech",
+      providerValue: "Mac",
+      connection: "Connection",
+      autoTranslate: "Auto translate",
+      on: "On",
+      off: "Off",
+      doctor: "Doctor",
+      openHandover: "Open handover",
+    };
+  }
+  return {
+    headerSubtitle: "本机语音 · LLM",
+    currentTask: "任务",
+    emptyTask: "输入目标和必要条件。",
+    taskHint: "缺项会显示在右侧。",
+    readiness: "准备",
+    noMissingCritical: "没有缺失的关键信息。",
+    reviewReady: "核对结果。",
+    outcomePending: "等待结果。",
+    liveSession: "实时会话",
+    outcomeAndDiagnostics: "结果",
+    outcome: "结果",
+    assumptions: "核对项",
+    callbacks: "回拨",
+    transcripts: "轮次",
+    diagnostics: "诊断",
+    provider: "语音",
+    providerValue: "Mac",
+    connection: "连接",
+    autoTranslate: "自动翻译",
+    on: "开",
+    off: "关",
+    doctor: "诊断",
+    openHandover: "打开交接",
+  };
 }

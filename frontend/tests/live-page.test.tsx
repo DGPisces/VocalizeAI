@@ -9,7 +9,7 @@ import React from "react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { NextIntlClientProvider } from "next-intl";
+import { I18nProvider } from "@/src/i18n";
 import zh from "../messages/zh.json";
 import { LivePageClient } from "../app/[locale]/live/[session]/LivePageClient";
 import { BrowserAudioBridge } from "../components/BrowserAudioBridge";
@@ -48,10 +48,10 @@ const mockDevices: MediaDeviceInfo[] = [
   },
 ];
 
-// next/navigation is mocked at the module level so the client component
+// router helper is mocked at the module level so the client component
 // can import useRouter / useSearchParams without crashing under jsdom.
 const replaceMock = vi.fn();
-vi.mock("next/navigation", () => ({
+vi.mock("@/src/router", () => ({
   useRouter: () => ({ replace: replaceMock, push: replaceMock }),
   useSearchParams: () => new URLSearchParams("ws=ws://example.test/ws/sessions/s-1"),
   usePathname: () => "/zh/live/s-1",
@@ -129,9 +129,9 @@ function defaultGetSessionResponse(
 
 function wrap(ui: React.ReactNode) {
   return (
-    <NextIntlClientProvider locale="zh" messages={zh}>
+    <I18nProvider locale="zh" messages={zh}>
       {ui}
-    </NextIntlClientProvider>
+    </I18nProvider>
   );
 }
 
@@ -189,8 +189,8 @@ function installCaptureContext() {
 }
 
 beforeEach(() => {
-  process.env.NEXT_PUBLIC_VOCALIZE_API_BASE_URL = "http://example.test";
-  delete process.env.NEXT_PUBLIC_VOCALIZE_WS_BASE_URL;
+  process.env.VITE_VOCALIZE_API_BASE_URL = "http://example.test";
+  delete process.env.VITE_VOCALIZE_WS_BASE_URL;
   localStorage.clear();
   replaceMock.mockReset();
 });

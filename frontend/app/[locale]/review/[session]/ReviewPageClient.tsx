@@ -1,8 +1,6 @@
-"use client";
-
 import React, { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useRouter } from "@/src/router";
+import { useTranslations } from "@/src/i18n";
 
 import {
   cancelCallback as defaultCancelCallback,

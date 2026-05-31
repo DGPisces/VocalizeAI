@@ -4,12 +4,12 @@ import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { NextIntlClientProvider } from "next-intl";
+import { I18nProvider } from "@/src/i18n";
 import { HandoverPanel } from "../components/HandoverPanel";
 import zh from "../messages/zh.json";
 
 const wrap = (ui: React.ReactNode) => (
-  <NextIntlClientProvider locale="zh" messages={zh}>{ui}</NextIntlClientProvider>
+  <I18nProvider locale="zh" messages={zh}>{ui}</I18nProvider>
 );
 
 describe("<HandoverPanel>", () => {
@@ -24,16 +24,16 @@ describe("<HandoverPanel>", () => {
     }
   });
 
-  it("AI takeover button calls onTakeover", async () => {
+  it("handover button calls onTakeover", async () => {
     const onTakeover = vi.fn();
     render(wrap(<HandoverPanel onTakeover={onTakeover} disabled={false} />));
-    await userEvent.click(screen.getByRole("button", { name: /AI 接管|AI takeover/i }));
+    await userEvent.click(screen.getByRole("button", { name: /交接|handover/i }));
     expect(onTakeover).toHaveBeenCalledTimes(1);
   });
 
   it("when disabled (readiness regressed), takeover button is disabled with tooltip", () => {
     render(wrap(<HandoverPanel onTakeover={() => {}} disabled />));
-    const btn = screen.getByRole("button", { name: /AI 接管|AI takeover/i });
+    const btn = screen.getByRole("button", { name: /交接|handover/i });
     expect(btn).toBeDisabled();
     expect(btn.getAttribute("title")).toMatch(/信息已变|Info changed/);
   });
@@ -41,7 +41,7 @@ describe("<HandoverPanel>", () => {
   it("does not call onTakeover when disabled (defensive)", async () => {
     const onTakeover = vi.fn();
     render(wrap(<HandoverPanel onTakeover={onTakeover} disabled />));
-    await userEvent.click(screen.getByRole("button", { name: /AI 接管|AI takeover/i }));
+    await userEvent.click(screen.getByRole("button", { name: /交接|handover/i }));
     expect(onTakeover).not.toHaveBeenCalled();
   });
 });

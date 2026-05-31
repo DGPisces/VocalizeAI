@@ -867,6 +867,9 @@ class DialogueOrchestratorRunner:
             reason="clarification timeout",
             channel=channel,
         )
+        task = getattr(self, "_orchestrator_task", None)
+        if task is not None and not task.done():
+            task.cancel()
 
     async def _handle_set_auto_translate(
         self,
@@ -1397,12 +1400,34 @@ class DialogueOrchestratorRunner:
                     )
 
             if forward_task in done:
-                pass
+                current_state = self._session.task_state
+                if (
+                    current_state is not None
+                    and current_state.phase == TaskPhase.POST_CALL_REVIEW
+                    and not orchestrator_task.done()
+                ):
+                    orchestrator_task.cancel()
+                    try:
+                        await orchestrator_task
+                    except (asyncio.CancelledError, Exception):
+                        pass
             elif orchestrator_task in done:
-                try:
-                    await forward_task
-                except (asyncio.CancelledError, Exception):
-                    pass
+                current_state = self._session.task_state
+                if (
+                    current_state is not None
+                    and current_state.phase == TaskPhase.POST_CALL_REVIEW
+                ):
+                    if not forward_task.done():
+                        forward_task.cancel()
+                    try:
+                        await forward_task
+                    except (asyncio.CancelledError, Exception):
+                        pass
+                else:
+                    try:
+                        await forward_task
+                    except (asyncio.CancelledError, Exception):
+                        pass
             else:
                 # External stop fired (hangup frame, WS closed).
                 # Cancel the orchestrator immediately — the user has

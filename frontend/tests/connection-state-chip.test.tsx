@@ -1,12 +1,12 @@
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { NextIntlClientProvider } from "next-intl";
+import { I18nProvider } from "@/src/i18n";
 import zh from "../messages/zh.json";
 import { ConnectionStateChip } from "../components/ConnectionStateChip";
 
 const wrap = (ui: React.ReactNode) => (
-  <NextIntlClientProvider locale="zh" messages={zh}>{ui}</NextIntlClientProvider>
+  <I18nProvider locale="zh" messages={zh}>{ui}</I18nProvider>
 );
 
 describe("<ConnectionStateChip>", () => {

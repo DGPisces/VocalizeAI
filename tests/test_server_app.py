@@ -5,11 +5,10 @@ from fastapi.testclient import TestClient
 
 from vocalize.config import reset_config
 from vocalize.llm.openai_compat import OpenAICompatClient
+from vocalize.providers import ProviderSTTClient, ProviderTTSClient
+from vocalize.providers.speech import SpeechProviderError
 from vocalize.server import _default_user_pipeline_factory
 from vocalize.server import create_app
-from vocalize.stt.sensevoice import SenseVoiceClient
-from vocalize.stt.sensevoice import SenseVoiceError
-from vocalize.tts.cosyvoice import CosyVoiceClient
 
 
 class _FakeTransport:
@@ -22,36 +21,31 @@ def test_default_pipeline_factory_builds_clients_from_app_config(monkeypatch) ->
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
     monkeypatch.setenv("OPENAI_BASE_URL", "https://example.test/v1")
     monkeypatch.setenv("OPENAI_MODEL", "test-model")
-    monkeypatch.setenv("GPU_HOST", "127.0.0.1")
-    monkeypatch.setenv("SENSEVOICE_WS_PORT", "18000")
-    monkeypatch.setenv("COSYVOICE_WS_PORT", "18001")
+    monkeypatch.setenv("VOCALIZE_STT_PROVIDER_URL", "http://127.0.0.1:18000")
+    monkeypatch.setenv("VOCALIZE_TTS_PROVIDER_URL", "http://127.0.0.1:18001")
     monkeypatch.setenv("DEFAULT_LANGUAGE", "zh")
     reset_config()
 
     pipeline = _default_user_pipeline_factory(_FakeTransport())
 
-    assert isinstance(pipeline._stt, SenseVoiceClient)
-    assert pipeline._stt.host == "127.0.0.1"
-    assert pipeline._stt.port == 18000
+    assert isinstance(pipeline._stt, ProviderSTTClient)
+    assert pipeline._stt.base_url == "http://127.0.0.1:18000"
+    assert pipeline._stt.ws_url == "ws://127.0.0.1:18000/v1/stt/stream"
     assert pipeline._stt.language_hint == "zh"
     assert isinstance(pipeline._llm, OpenAICompatClient)
-    assert isinstance(pipeline._tts, CosyVoiceClient)
-    assert pipeline._tts.host == "127.0.0.1"
-    assert pipeline._tts.port == 18001
+    assert isinstance(pipeline._tts, ProviderTTSClient)
+    assert pipeline._tts.base_url == "http://127.0.0.1:18001"
+    assert pipeline._tts.ws_url == "ws://127.0.0.1:18001/v1/tts/stream"
 
 
-def test_sensevoice_from_app_config_requires_gpu_host(monkeypatch) -> None:
-    from vocalize.config import Config
-
-    monkeypatch.delenv("GPU_HOST", raising=False)
-    reset_config()
-
+def test_provider_url_validation_rejects_unknown_scheme() -> None:
+    client = ProviderSTTClient(base_url="ftp://127.0.0.1:18000")
     try:
-        SenseVoiceClient.from_app_config(Config.from_env())
-    except SenseVoiceError as exc:
-        assert "GPU_HOST" in str(exc)
+        _ = client.ws_url
+    except SpeechProviderError as exc:
+        assert "scheme" in str(exc)
     else:  # pragma: no cover - assertion clarity
-        raise AssertionError("SenseVoiceClient.from_app_config accepted missing GPU_HOST")
+        raise AssertionError("ProviderSTTClient accepted unsupported URL scheme")
 
 
 def test_create_app_allows_readme_127_frontend_origin(monkeypatch) -> None:
@@ -75,3 +69,32 @@ def test_create_app_allows_readme_127_frontend_origin(monkeypatch) -> None:
 
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:3000"
+
+
+def test_create_app_serves_built_vite_frontend(monkeypatch, tmp_path) -> None:
+    dist = tmp_path / "dist"
+    assets = dist / "assets"
+    assets.mkdir(parents=True)
+    (dist / "index.html").write_text("<main>VocalizeAI console</main>", encoding="utf-8")
+    (assets / "app.js").write_text("console.log('vocalize')", encoding="utf-8")
+
+    monkeypatch.setenv("VOCALIZE_HOST", "127.0.0.1")
+    monkeypatch.setenv("VOCALIZE_FRONTEND_DIST", str(dist))
+    monkeypatch.delenv("VOCALIZE_WS_BASE_URL", raising=False)
+    reset_config()
+
+    app = create_app()
+
+    with TestClient(app) as client:
+        index = client.get("/")
+        spa_route = client.get("/zh/live/session-1")
+        asset = client.get("/assets/app.js")
+        api_miss = client.get("/api/not-found")
+
+    assert index.status_code == 200
+    assert "VocalizeAI console" in index.text
+    assert spa_route.status_code == 200
+    assert "VocalizeAI console" in spa_route.text
+    assert asset.status_code == 200
+    assert "vocalize" in asset.text
+    assert api_miss.status_code == 404

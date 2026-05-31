@@ -6,22 +6,22 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { LanguageToggle } from "../components/LanguageToggle";
 
-// Mock next-intl's useLocale
-vi.mock("next-intl", () => ({
+// Mock i18n helper's useLocale
+vi.mock("@/src/i18n", () => ({
   useLocale: vi.fn(() => "zh"),
 }));
 
-// Mock next/navigation
+// Mock router helper
 const mockReplace = vi.fn();
 const mockSearchParams = vi.fn(() => new URLSearchParams());
-vi.mock("next/navigation", () => ({
+vi.mock("@/src/router", () => ({
   useRouter: () => ({ replace: mockReplace }),
   usePathname: vi.fn(() => "/zh"),
   useSearchParams: () => mockSearchParams(),
 }));
 
-import { useLocale } from "next-intl";
-import { usePathname } from "next/navigation";
+import { useLocale } from "@/src/i18n";
+import { usePathname } from "@/src/router";
 
 const mockUseLocale = vi.mocked(useLocale);
 const mockUsePathname = vi.mocked(usePathname);

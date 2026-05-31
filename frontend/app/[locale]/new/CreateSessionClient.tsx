@@ -1,8 +1,6 @@
-"use client";
-
 import React, { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "@/src/router";
+import { useLocale, useTranslations } from "@/src/i18n";
 import { createSession } from "../../../lib/api";
 
 interface Props {

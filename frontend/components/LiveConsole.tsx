@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { useEffect, useRef, useState } from "react";
 import { BrowserAudioBridge } from "./BrowserAudioBridge";
@@ -8,6 +6,7 @@ import { postTask } from "../lib/api";
 import { initialReadiness } from "../lib/state";
 import { trustedSessionWsUrl, VocalizeSocket } from "../lib/ws";
 import type { DecodedAudioFrame } from "../lib/ws";
+import { isE2eAudioHookEnabled } from "../src/env";
 
 declare global {
   interface Window {
@@ -113,7 +112,7 @@ export function LiveConsole({
   }, []);
 
   useEffect(() => {
-    if (process.env.NEXT_PUBLIC_E2E_AUDIO_HOOK !== "1") {
+    if (!isE2eAudioHookEnabled()) {
       return;
     }
     window.__vocalizeSendSyntheticPcm = () => {
@@ -169,7 +168,7 @@ export function LiveConsole({
               </div>
               {error ? <div className="alert alert--bad" role="alert">{error}</div> : null}
               <label className="form-row">
-                <span className="form-label">你要 AI 帮你打什么电话？</span>
+                <span className="form-label">电话任务</span>
                 <input
                   className="form-input form-input--full"
                   value={task}
@@ -213,7 +212,7 @@ export function LiveConsole({
               {events.length ? (
                 events.map((event, index) => <p key={`${event}-${index}`}>{event}</p>)
               ) : (
-                <p>等待用户输入或语音...</p>
+                <p>等待输入...</p>
               )}
             </section>
           </div>
@@ -225,7 +224,7 @@ export function LiveConsole({
               playbackFrame={playbackFrame}
             />
             <section className={readiness.passed ? "alert alert--ok" : "alert alert--warn"}>
-              {readiness.passed ? "信息已足够，可以接管" : "等待关键信息"}
+              {readiness.passed ? "信息已足够" : "等待关键信息"}
             </section>
             <button
               className="btn-primary"
@@ -233,7 +232,7 @@ export function LiveConsole({
               disabled={!readiness.passed}
               onClick={handover}
             >
-              AI 接管
+              交接
             </button>
             <DeviceProbe
               onSelectionChange={({ inputId, outputId }) => {

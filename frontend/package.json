@@ -4,18 +4,17 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "start": "vite --host 127.0.0.1",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "playwright test -c playwright.config.ts"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
-    "next": "^14.2.0",
-    "next-intl": "^3.26.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -28,10 +27,10 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "eslint": "^8.57.1",
-    "eslint-config-next": "^14.2.35",
     "jsdom": "^25.0.1",
     "knip": "^6.14.1",
     "typescript": "^5.7.2",
+    "vite": "^5.4.21",
     "vitest": "^2.1.8"
   }
 }

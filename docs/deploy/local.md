@@ -65,16 +65,17 @@ After the installer runs, edit `.env`:
 $EDITOR .env
 ```
 
-**All 17 env vars explained:**
+**Core env vars explained:**
 
 | Key | Required? | Purpose |
 |-----|-----------|---------|
 | `OPENAI_API_KEY` | **yes** | LLM authentication — any OpenAI-compatible provider (OpenAI, DeepSeek, Qwen, etc.) |
 | `OPENAI_BASE_URL` | default ok | LLM endpoint; default `https://api.deepseek.com/v1` |
 | `OPENAI_MODEL` | default ok | Model name; default `deepseek-chat` |
-| `GPU_HOST` | only if using GPU | STT/TTS host; use `localhost` for single-machine dev, Tailscale IP for remote-GPU deployment (e.g. Raspberry Pi orchestrator → GPU node) |
-| `SENSEVOICE_WS_PORT` | default ok | SenseVoice STT WebSocket port; default `8000` |
-| `COSYVOICE_WS_PORT` | default ok | CosyVoice TTS WebSocket port; default `8001` |
+| `VOCALIZE_STT_PROVIDER_URL` | default ok | STT Provider API base URL; defaults to the local macOS native helper |
+| `VOCALIZE_TTS_PROVIDER_URL` | default ok | TTS Provider API base URL; defaults to the local macOS native helper |
+| `VOCALIZE_SPEECH_PROVIDER_AUTO_START` | default ok | Set `1` to let the backend start the configured speech helper command |
+| `VOCALIZE_SPEECH_PROVIDER_COMMAND` | optional | Command used when auto-start is enabled |
 | `VOCALIZE_HOST` | default ok | uvicorn bind host; `127.0.0.1` for local dev, `0.0.0.0` for production |
 | `VOCALIZE_PORT` | default ok | uvicorn bind port; default `8080` (note: dev `main.py` defaults to 8000) |
 | `ORCHESTRATOR_LISTEN_PORT` | default ok | Orchestrator service port; default `8080` (legacy; mirrors `VOCALIZE_PORT`) |
@@ -82,8 +83,8 @@ $EDITOR .env
 | `VOCALIZE_CORS_ORIGINS` | default ok | Comma-separated allowed CORS origins; auto-picked from VOCALIZE_HOST in dev mode |
 | `DEFAULT_LANGUAGE` | default ok | Session default language; `zh` or `en`; default `zh` |
 | `LOG_DIR` | default ok | Log directory; default `logs` |
-| `NEXT_PUBLIC_VOCALIZE_API_BASE_URL` | yes for frontend | Frontend API base URL baked into the Next.js JS bundle at build time |
-| `NEXT_PUBLIC_VOCALIZE_WS_BASE_URL` | optional | Frontend WS base; derived from `NEXT_PUBLIC_VOCALIZE_API_BASE_URL` if absent |
+| `VITE_VOCALIZE_API_BASE_URL` | yes for dev frontend | Frontend API base URL baked into the Vite JS bundle at build time |
+| `VITE_VOCALIZE_WS_BASE_URL` | optional | Frontend WS base; derived from `VITE_VOCALIZE_API_BASE_URL` if absent |
 
 **Backend auth posture:** v1 ships no request-level auth on
 `POST /api/sessions` or the WebSocket. For non-localhost deployments,
@@ -91,15 +92,14 @@ restrict reachability at the network or proxy layer (Cloudflare Access,
 VPN, reverse-proxy auth, etc.). Per-user auth is v1.x scope
 (requirement `AUTH-01`).
 
-**Minimum for local dev (no GPU):**
+**Minimum for local dev on macOS:**
 ```bash
 OPENAI_API_KEY=<your-key>
-NEXT_PUBLIC_VOCALIZE_API_BASE_URL=http://127.0.0.1:8000
+VITE_VOCALIZE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-With these two set, the backend and frontend work end-to-end. GPU services
-(`GPU_HOST`) are optional — `GET /health` will report `gpu_reachable=false` but
-the LLM path (task planning, preflight) still works.
+With these two set, the backend and frontend work end-to-end. STT/TTS default to
+the local macOS native speech helper.
 
 ---
 
@@ -123,7 +123,7 @@ running:
 
 ```bash
 curl -s http://127.0.0.1:8000/health
-# → {"ok": true, "gpu_reachable": false}
+# → {"ok": true, "speech_provider_reachable": true}
 ```
 
 ---
@@ -134,14 +134,13 @@ Open a second terminal:
 
 ```bash
 cd frontend
-npm run dev -- --hostname 127.0.0.1 --port 3000
+npm run dev -- --host 127.0.0.1 --port 3000
 ```
 
 Open `http://127.0.0.1:3000` in your browser.
 
-The frontend calls the backend directly through `NEXT_PUBLIC_VOCALIZE_API_BASE_URL`.
-If the frontend was built without setting this variable, it will default to
-`http://127.0.0.1:8000`. Set it explicitly in `.env` for consistent behaviour.
+The frontend calls the backend directly through `VITE_VOCALIZE_API_BASE_URL`.
+Set it before starting or building the frontend.
 
 ---
 
@@ -195,9 +194,9 @@ does not require physical hardware.
   `RuntimeError` (D-11 guard) — set it or switch to `VOCALIZE_HOST=127.0.0.1`
 
 **Frontend can't reach backend:**
-- Check that `NEXT_PUBLIC_VOCALIZE_API_BASE_URL` in `.env` matches the backend port
+- Check that `VITE_VOCALIZE_API_BASE_URL` in `.env` matches the backend port
   (default `http://127.0.0.1:8000`)
-- Restart the frontend dev server after editing `.env` (Next.js bakes env vars at
+- Restart the frontend dev server after editing `.env` (Vite bakes env vars at
   build time; hot-reload does NOT pick up `.env` changes)
 
 **`scripts/smoke.sh` fails on the WS step:**
@@ -209,8 +208,9 @@ does not require physical hardware.
 - Check that the backend is actually running and the WS route is up:
   `curl -s http://127.0.0.1:8000/health` should return `{"ok": true, ...}`
 
-**`/health` returns `gpu_reachable=false`:**
-- This is expected when GPU services are not running. The LLM path works without
-  GPU; only STT/TTS (audio pipeline) require the GPU host.
-- To enable GPU: set `GPU_HOST` to your GPU node's Tailscale IP and ensure
-  SenseVoice + CosyVoice are running on that host.
+**`/health` returns `speech_provider_reachable=false`:**
+- Start the macOS speech helper or set `VOCALIZE_SPEECH_PROVIDER_AUTO_START=1`
+  with a valid `VOCALIZE_SPEECH_PROVIDER_COMMAND`.
+- If you use a custom provider, check that `VOCALIZE_STT_PROVIDER_URL` and
+  `VOCALIZE_TTS_PROVIDER_URL` point to a service implementing
+  `docs/provider-api.md`.

@@ -29,6 +29,34 @@ def _int_env(name: str, default: int) -> int:
         return default
 
 
+def _float_env(name: str, default: float) -> float:
+    """读取浮点环境变量；空字符串或非法值时回退到 default。"""
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        logging.warning(
+            "环境变量 %s=%r 不是合法浮点数，使用默认值 %s", name, raw, default
+        )
+        return default
+
+
+def _bool_env(name: str, default: bool) -> bool:
+    """读取布尔环境变量；接受 1/true/yes/on 和 0/false/no/off。"""
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return default
+    normalized = raw.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    logging.warning("环境变量 %s=%r 不是合法布尔值，使用默认值 %s", name, raw, default)
+    return default
+
+
 @dataclass
 class Config:
     """应用配置类。"""
@@ -38,11 +66,14 @@ class Config:
     openai_base_url: str = "https://api.deepseek.com/v1"
     openai_model: str = "deepseek-chat"
 
-    # GPU 推理节点（Tailscale 内网地址）。空串=未配置；`localhost` 是 Phase 0.5
-    # 同机部署的合法值，validate_for_phase("gpu") 不会把它判为缺失。
-    gpu_host: str = ""
-    sensevoice_ws_port: int = 8000
-    cosyvoice_ws_port: int = 8001
+    # Speech Provider API. v0.1 public default expects the macOS native helper
+    # on loopback; setup/doctor may rewrite these in generated local config.
+    stt_provider_url: str = "http://127.0.0.1:8765"
+    tts_provider_url: str = "http://127.0.0.1:8765"
+    provider_connect_timeout_s: float = 5.0
+    speech_provider_auto_start: bool = False
+    speech_provider_command: str | None = None
+    speech_provider_startup_timeout_s: float = 5.0
 
     # Pi 生产服务（Phase 4.5）
     orchestrator_listen_port: int = 8080
@@ -57,15 +88,50 @@ class Config:
     def from_env(cls) -> "Config":
         """从环境变量和 .env 文件加载配置。"""
         if load_dotenv is not None:
-            load_dotenv()
+            env_file = os.getenv("VOCALIZE_ENV_FILE")
+            if env_file:
+                load_dotenv(env_file)
+            else:
+                load_dotenv()
+
+        from vocalize.runtime_paths import bundled_speech_provider
+
+        bundled_provider = bundled_speech_provider()
+        default_provider_command = (
+            str(bundled_provider)
+            if bundled_provider is not None
+            else cls.speech_provider_command
+        )
+        default_provider_auto_start = (
+            cls.speech_provider_auto_start or bundled_provider is not None
+        )
 
         return cls(
             openai_api_key=os.getenv("OPENAI_API_KEY"),
             openai_base_url=os.getenv("OPENAI_BASE_URL", cls.openai_base_url),
             openai_model=os.getenv("OPENAI_MODEL", cls.openai_model),
-            gpu_host=os.getenv("GPU_HOST", cls.gpu_host),
-            sensevoice_ws_port=_int_env("SENSEVOICE_WS_PORT", cls.sensevoice_ws_port),
-            cosyvoice_ws_port=_int_env("COSYVOICE_WS_PORT", cls.cosyvoice_ws_port),
+            stt_provider_url=os.getenv(
+                "VOCALIZE_STT_PROVIDER_URL", cls.stt_provider_url
+            ),
+            tts_provider_url=os.getenv(
+                "VOCALIZE_TTS_PROVIDER_URL", cls.tts_provider_url
+            ),
+            provider_connect_timeout_s=_float_env(
+                "VOCALIZE_PROVIDER_CONNECT_TIMEOUT_S",
+                cls.provider_connect_timeout_s,
+            ),
+            speech_provider_auto_start=_bool_env(
+                "VOCALIZE_SPEECH_PROVIDER_AUTO_START",
+                default_provider_auto_start,
+            ),
+            speech_provider_command=os.getenv(
+                "VOCALIZE_SPEECH_PROVIDER_COMMAND",
+                default_provider_command,
+            ),
+            speech_provider_startup_timeout_s=_float_env(
+                "VOCALIZE_SPEECH_PROVIDER_STARTUP_TIMEOUT_S",
+                cls.speech_provider_startup_timeout_s,
+            ),
             orchestrator_listen_port=_int_env(
                 "ORCHESTRATOR_LISTEN_PORT", cls.orchestrator_listen_port
             ),
@@ -74,7 +140,7 @@ class Config:
         )
 
     def validate_for_phase(
-        self, phase: Literal["llm", "gpu"]
+        self, phase: Literal["llm", "speech"]
     ) -> list[str]:
         """返回该 phase 缺失的环境变量名列表；空列表代表 OK。
 
@@ -85,9 +151,11 @@ class Config:
         if phase == "llm":
             if not self.openai_api_key:
                 missing.append("OPENAI_API_KEY")
-        elif phase == "gpu":
-            if not self.gpu_host:
-                missing.append("GPU_HOST")
+        elif phase == "speech":
+            if not self.stt_provider_url:
+                missing.append("VOCALIZE_STT_PROVIDER_URL")
+            if not self.tts_provider_url:
+                missing.append("VOCALIZE_TTS_PROVIDER_URL")
         return missing
 
     def get_missing_configs(self) -> list[str]:

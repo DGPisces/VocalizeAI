@@ -5,6 +5,7 @@ import type {
   TranscriptMessage,
 } from "./state";
 import type { TaskPhaseValue } from "./ws";
+import { readPublicEnv } from "../src/env";
 
 export interface CreateSessionRequest {
   preferred_voice_id?: string | null; // null = clear/unset
@@ -46,9 +47,9 @@ export interface GetReviewResponse {
 }
 
 function apiBaseUrl(): string {
-  const value = process.env.NEXT_PUBLIC_VOCALIZE_API_BASE_URL;
+  const value = readPublicEnv("VOCALIZE_API_BASE_URL");
   if (!value) {
-    throw new Error("NEXT_PUBLIC_VOCALIZE_API_BASE_URL is required");
+    throw new Error("VITE_VOCALIZE_API_BASE_URL is required");
   }
   return value.replace(/\/$/, "");
 }

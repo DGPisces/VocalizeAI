@@ -1,0 +1,14 @@
+# Private/internal planning files are already denied by scripts/build-public-filelist.py.
+# This project deny file removes legacy v1 deployment assets from the v0.1 public export.
+
+infra/gpu-services/
+infra/orchestrator/
+docs/deploy/linux.md
+docs/release/24h-stability-evidence.md
+docs/release/24h-stability-evidence-runs/
+demos/phase1_stt_mic.py
+demos/phase2_stt_llm.py
+demos/phase3_full_voice_local.py
+scripts/stability-24h-driver.py
+src/vocalize/stt/sensevoice.py
+src/vocalize/tts/cosyvoice.py

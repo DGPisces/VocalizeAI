@@ -568,8 +568,9 @@ class _ReleaseAudioSettings(BaseModel):
 
 
 def _release_audio_settings() -> _ReleaseAudioSettings:
-    backend_url = os.getenv("VOCALIZE_RELEASE_AUDIO_BACKEND_URL") or os.getenv(
-        "NEXT_PUBLIC_VOCALIZE_API_BASE_URL"
+    backend_url = (
+        os.getenv("VOCALIZE_RELEASE_AUDIO_BACKEND_URL")
+        or os.getenv("VITE_VOCALIZE_API_BASE_URL")
     )
     input_label = os.getenv("VOCALIZE_RELEASE_AUDIO_INPUT_LABEL")
     play_cmd = os.getenv("VOCALIZE_RELEASE_AUDIO_PLAY_CMD")

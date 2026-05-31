@@ -1293,7 +1293,7 @@ async def test_relay_to_user_bidirectional() -> None:
 # ---------------------------------------------------------------------------
 async def test_orchestrator_passes_transport_kwarg_to_merchant_stt() -> None:
     """orchestrator.run() must call ``merchant_pipeline._stt.stream_transcribe``
-    with ``transport=merchant_pipeline._transport`` so SenseVoiceClient can
+    with ``transport=merchant_pipeline._transport`` so the STT provider can
     register its client-side webrtcvad EOS handler.
     """
     state = TaskState(session_id="test-transport")

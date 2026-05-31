@@ -1,14 +1,12 @@
 # infra/
 
-Deployable services and their configuration. Each subdirectory is the canonical
-home of one runtime artifact:
+Deployment support files and runtime configuration examples.
 
-- `gpu-services/` — Docker Compose stack for SenseVoice (STT) and CosyVoice
-  (TTS) inference servers (`docker-compose.yml`, `healthcheck.sh`, model dirs).
-- `orchestrator/` — Linux-host deployment for the FastAPI orchestrator,
-  with systemd + Cloudflare Tunnel wiring (`vocalize.service`,
-  `cloudflared-config.yml`, `deploy.sh`, `setup.sh`). Tested on Debian /
-  Ubuntu / Raspberry Pi OS; any modern Linux host with systemd works.
+The public `v0.1.0` user path is the packaged macOS artifact. Ordinary users do
+not need anything in this directory.
 
-Contrast with `scripts/` (maintainer-run utilities, not deployed) and `tools/`
-(release tooling, currently empty).
+- `orchestrator/` — advanced source deployment reference for operators who are
+  not using the packaged macOS artifact.
+
+Contrast with `scripts/` (maintainer-run utilities) and `tools/` (release and
+CI helpers).

@@ -5,12 +5,12 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TranscriptStream } from "../components/TranscriptStream";
-import { NextIntlClientProvider } from "next-intl";
+import { I18nProvider } from "@/src/i18n";
 import zh from "../messages/zh.json";
 import type { TranscriptMessage } from "../lib/state";
 
 const wrap = (ui: React.ReactNode) => (
-  <NextIntlClientProvider locale="zh" messages={zh}>{ui}</NextIntlClientProvider>
+  <I18nProvider locale="zh" messages={zh}>{ui}</I18nProvider>
 );
 
 const merchantOriginal: TranscriptMessage = {
@@ -68,9 +68,9 @@ describe("<TranscriptStream>", () => {
     expect(original?.querySelector(".bubble__translation")?.textContent).toBe("你好");
   });
 
-  it("renders user_supplement as muted center bubble with 用户提示 AI label", () => {
+  it("renders user_supplement as muted center bubble with 补充 label", () => {
     render(wrap(<TranscriptStream transcripts={[userSupplement]} />));
-    expect(screen.getByText("用户提示 AI")).toBeInTheDocument();
+    expect(screen.getByText("补充")).toBeInTheDocument();
   });
 
   it("renders callback_segment with separator + 回拨通话 label", () => {

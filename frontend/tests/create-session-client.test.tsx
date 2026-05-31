@@ -2,22 +2,22 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import React from "react";
 import { CreateSessionClient } from "../app/[locale]/new/CreateSessionClient";
-import { NextIntlClientProvider } from "next-intl";
+import { I18nProvider } from "@/src/i18n";
 import en from "../messages/en.json";
 import zh from "../messages/zh.json";
 
 const replaceMock = vi.hoisted(() => vi.fn());
 
 const wrap = (ui: React.ReactNode) => (
-  <NextIntlClientProvider locale="zh" messages={zh}>{ui}</NextIntlClientProvider>
+  <I18nProvider locale="zh" messages={zh}>{ui}</I18nProvider>
 );
 
 const wrapEn = (ui: React.ReactNode) => (
-  <NextIntlClientProvider locale="en" messages={en}>{ui}</NextIntlClientProvider>
+  <I18nProvider locale="en" messages={en}>{ui}</I18nProvider>
 );
 
 beforeEach(() => {
-  process.env.NEXT_PUBLIC_VOCALIZE_API_BASE_URL = "http://127.0.0.1:8000";
+  process.env.VITE_VOCALIZE_API_BASE_URL = "http://127.0.0.1:8000";
   localStorage.clear();
   vi.resetAllMocks();
 });
@@ -26,7 +26,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-vi.mock("next/navigation", () => ({
+vi.mock("@/src/router", () => ({
   useRouter: () => ({ replace: replaceMock }),
 }));
 
@@ -172,7 +172,7 @@ describe("<CreateSessionClient>", () => {
 
     render(wrap(<CreateSessionClient onCreated={() => {}} />));
 
-    expect(document.body).toHaveTextContent("正在创建会话...");
+    expect(document.body).toHaveTextContent("创建会话中...");
   });
 
   it("shows an error and retries when session creation fails", async () => {

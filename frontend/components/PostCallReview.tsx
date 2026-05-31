@@ -1,7 +1,7 @@
 // frontend/components/PostCallReview.tsx
 
 import React, { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/src/i18n";
 import type { GetReviewResponse, ReviewCallSegment } from "../lib/api";
 import type { CallbackEntry, SlotAssumption } from "../lib/state";
 import { RedialConfirmModal } from "./RedialConfirmModal";

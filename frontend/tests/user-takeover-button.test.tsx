@@ -5,11 +5,11 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { UserTakeoverButton } from "../components/UserTakeoverButton";
-import { NextIntlClientProvider } from "next-intl";
+import { I18nProvider } from "@/src/i18n";
 import zh from "../messages/zh.json";
 
 const wrap = (ui: React.ReactNode) => (
-  <NextIntlClientProvider locale="zh" messages={zh}>{ui}</NextIntlClientProvider>
+  <I18nProvider locale="zh" messages={zh}>{ui}</I18nProvider>
 );
 
 describe("<UserTakeoverButton>", () => {

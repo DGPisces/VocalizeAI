@@ -1,7 +1,7 @@
 // frontend/components/TextSupplementInput.tsx
 
 import React, { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/src/i18n";
 import type { TaskPhaseValue, TextInputMode } from "../lib/ws";
 
 interface Props {

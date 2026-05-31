@@ -16,8 +16,8 @@ utterance 边界语义：
 
 cancellation：
 - 调用方通过对返回的 AsyncIterator 调用 ``aclose()`` 触发 STT 服务停止识别。
-- 实现是否真的关闭上游 WebSocket / 释放 GPU session 由实现类负责；建议在 ``aclose``
-  路径上发送 finalize 信号、然后关闭 socket，避免 GPU 节点继续占用。
+- 实现是否真的关闭上游 WebSocket / 释放 provider session 由实现类负责；建议在
+  ``aclose`` 路径上发送 finalize 信号、然后关闭 socket，避免上游会话继续占用。
 
 实现类应额外提供 ``async health_check() -> bool`` 方法供 Phase 6 编排器监控。
 """

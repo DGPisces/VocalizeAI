@@ -1,125 +1,79 @@
 # VocalizeAI Release Flow
 
-Manual release recipe for VocalizeAI. No automated tooling (Release Please, semantic-release)
-is adopted at v1 scale — the solo-maintainer overhead exceeds the benefit.
-
-v1.0.0 was the first exercise of this flow (Phase 8), establishing the baseline.
-Each subsequent release follows the same steps.
-
----
+Release flow for the Mac-first public product.
 
 ## Prerequisites
 
-- `gh` CLI authenticated (`gh auth status`)
-- Working directory clean on `main` (`git status`)
-- All CI checks green on `main`
+- Working tree clean on the release branch.
+- CI green, including backend, Provider API, macOS helper, frontend,
+  packaging/installer, and public-tree audit.
+- Required review from DGPisces.
+- Apple Developer ID signing and notarization secrets configured in GitHub.
+- Human clean-install test plan ready.
 
----
-
-## Step 1 — Create a release branch
+## Step 1 — Prepare the Release Branch
 
 ```bash
-git checkout main && git pull
+git checkout main
+git pull
 git checkout -b release/vX.Y.Z
 ```
 
----
+Update the version in `pyproject.toml` if needed, then update `CHANGELOG.md`.
 
-## Step 2 — Bump version in pyproject.toml
-
-```bash
-# Edit pyproject.toml: update [project] version = "X.Y.Z"
-$EDITOR pyproject.toml
-```
-
-Commit:
+## Step 2 — Run Local Release Checks
 
 ```bash
-git add pyproject.toml
-git commit -m "chore(release): bump version to X.Y.Z"
+.venv/bin/python -m pytest tests --ignore=tests/integration
+cd frontend && npm run lint && npm run build && npm test
+cd ..
+bash -n install/install.sh install/uninstall.sh scripts/build-macos-release.sh
 ```
 
----
-
-## Step 3 — Write CHANGELOG entry
-
-Edit `CHANGELOG.md` at repo root:
-
-1. Move items from `## [Unreleased]` into a new `## [X.Y.Z] — YYYY-MM-DD` section.
-2. Leave `## [Unreleased]` empty with the stub line.
-3. Add the comparison link at the bottom:
-   `[X.Y.Z]: https://github.com/DGPisces/VocalizeAI/compare/vA.B.C...vX.Y.Z`
+For a local unsigned artifact smoke:
 
 ```bash
-git add CHANGELOG.md
-git commit -m "docs(release): CHANGELOG entry for vX.Y.Z"
+scripts/build-macos-release.sh --signing-mode skip
+bash install/verify-release.sh dist/release/SHA256SUMS dist/release/VocalizeAI-*-macos-*.zip
 ```
 
----
-
-## Step 4 — Open and merge the release PR
+## Step 3 — Open the Release PR
 
 ```bash
 git push -u origin release/vX.Y.Z
 gh pr create \
   --base main \
   --title "Release vX.Y.Z" \
-  --body "Bump version to X.Y.Z. See CHANGELOG.md for details."
+  --body "Prepare VocalizeAI vX.Y.Z. See CHANGELOG.md for details."
 ```
 
-Wait for CI to pass, self-approve (solo maintainer), then merge to `main`.
+Merge only after CI is green and the maintainer review is complete.
+
+## Step 4 — Tag the Release
 
 ```bash
-# After merge:
-git checkout main && git pull
-```
-
----
-
-## Step 5 — Tag the release
-
-```bash
+git checkout main
+git pull
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
----
+The GitHub `Release` workflow builds the signed/notarized macOS artifact,
+generates `SHA256SUMS`, verifies install/setup/uninstall smoke, and publishes
+the assets to the GitHub Release.
 
-## Step 6 — Create GitHub Release
+## Step 5 — Human Acceptance
 
-Prepare a release notes file (can reuse the CHANGELOG section):
+Before the public reset or release announcement, a tester must install from the
+GitHub Release artifact and verify:
 
-```bash
-# Extract the relevant CHANGELOG section into a temp file, or write inline:
-gh release create vX.Y.Z \
-  --title "vX.Y.Z" \
-  --notes-file path/to/release-notes.md \
-  --verify-tag
-```
+- `./vocalize setup` with only LLM values
+- `./vocalize doctor` with production checks enabled
+- `./vocalize start`
+- one Chinese and one English end-to-end smoke task
+- `./vocalize uninstall` or `uninstall.sh`
 
-Alternatively, draft the release in the GitHub UI after pushing the tag.
+## Branch Protection
 
----
-
-## Step 7 — Sync to public repo
-
-Run the sync-private-to-public flow (documented in `.planning/skills/`) to push
-sanitized source to `github.com/DGPisces/VocalizeAI`. The tag and release travel
-with the sync.
-
----
-
-## Step 8 — Post-release verification
-
-- Confirm the GitHub Release page shows the correct tag and notes.
-- Confirm the Discussions > Announcements tab auto-created a release announcement (optional).
-- Run layer4 smoke checklist against the production Pi deployment:
-  `docs/release/layer4-smoke-checklist.md`.
-
----
-
-## History
-
-| Version | Date       | Internal SHA | Public SHA |
-|---------|------------|--------------|------------|
-| 1.0.0   | 2026-05-18 | d9bd923      | 591aa9e    |
+See [branch-protection.md](branch-protection.md) for required check names,
+review policy, and release secret names.

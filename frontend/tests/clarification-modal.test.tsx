@@ -5,11 +5,11 @@ import { describe, expect, it, vi, afterEach } from "vitest";
 import { fireEvent, render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ClarificationModal } from "../components/ClarificationModal";
-import { NextIntlClientProvider } from "next-intl";
+import { I18nProvider } from "@/src/i18n";
 import zh from "../messages/zh.json";
 
 const wrap = (ui: React.ReactNode) => (
-  <NextIntlClientProvider locale="zh" messages={zh}>{ui}</NextIntlClientProvider>
+  <I18nProvider locale="zh" messages={zh}>{ui}</I18nProvider>
 );
 
 afterEach(() => { vi.useRealTimers(); });

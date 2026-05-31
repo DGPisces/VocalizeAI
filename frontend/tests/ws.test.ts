@@ -64,22 +64,22 @@ describe("ws frame codec", () => {
   });
 
   it("accepts a separately configured backend WebSocket base URL", () => {
-    process.env.NEXT_PUBLIC_VOCALIZE_API_BASE_URL = "https://api.example.test";
-    process.env.NEXT_PUBLIC_VOCALIZE_WS_BASE_URL = "wss://ws.example.test";
+    process.env.VITE_VOCALIZE_API_BASE_URL = "https://api.example.test";
+    process.env.VITE_VOCALIZE_WS_BASE_URL = "wss://ws.example.test";
 
     try {
       expect(
         trustedSessionWsUrl("wss://ws.example.test/ws/sessions/abc", "abc")
       ).toBe("wss://ws.example.test/ws/sessions/abc");
     } finally {
-      delete process.env.NEXT_PUBLIC_VOCALIZE_API_BASE_URL;
-      delete process.env.NEXT_PUBLIC_VOCALIZE_WS_BASE_URL;
+      delete process.env.VITE_VOCALIZE_API_BASE_URL;
+      delete process.env.VITE_VOCALIZE_WS_BASE_URL;
     }
   });
 
   it("accepts local loopback aliases for the same WebSocket listener", () => {
-    process.env.NEXT_PUBLIC_VOCALIZE_API_BASE_URL = "http://127.0.0.1:8000";
-    delete process.env.NEXT_PUBLIC_VOCALIZE_WS_BASE_URL;
+    process.env.VITE_VOCALIZE_API_BASE_URL = "http://127.0.0.1:8000";
+    delete process.env.VITE_VOCALIZE_WS_BASE_URL;
 
     try {
       expect(
@@ -89,20 +89,20 @@ describe("ws frame codec", () => {
         trustedSessionWsUrl("ws://[::1]:8000/ws/sessions/abc", "abc")
       ).toBe("ws://[::1]:8000/ws/sessions/abc");
     } finally {
-      delete process.env.NEXT_PUBLIC_VOCALIZE_API_BASE_URL;
+      delete process.env.VITE_VOCALIZE_API_BASE_URL;
     }
   });
 
   it("rejects non-loopback host mismatches", () => {
-    process.env.NEXT_PUBLIC_VOCALIZE_API_BASE_URL = "http://127.0.0.1:8000";
-    delete process.env.NEXT_PUBLIC_VOCALIZE_WS_BASE_URL;
+    process.env.VITE_VOCALIZE_API_BASE_URL = "http://127.0.0.1:8000";
+    delete process.env.VITE_VOCALIZE_WS_BASE_URL;
 
     try {
       expect(() =>
         trustedSessionWsUrl("ws://example.test:8000/ws/sessions/abc", "abc")
       ).toThrow("Invalid WebSocket URL");
     } finally {
-      delete process.env.NEXT_PUBLIC_VOCALIZE_API_BASE_URL;
+      delete process.env.VITE_VOCALIZE_API_BASE_URL;
     }
   });
 });

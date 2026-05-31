@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AudioLevelMeter } from "./AudioLevelMeter";
@@ -17,6 +15,7 @@ import {
   PREFERRED_CHUNK_MS,
   shouldDegradeCapture
 } from "../lib/audio";
+import { isE2eAudioHookEnabled, readRuntimeMode } from "../src/env";
 
 // ---------------------------------------------------------------------------
 // B3a state machine (new public API).
@@ -247,7 +246,7 @@ export function BrowserAudioBridge(props: Props) {
   // dev. Legacy wins (see Props JSDoc).
   const mixWarnedRef = useRef({ sendAudio: false, status: false });
   useEffect(() => {
-    if (process.env.NODE_ENV === "production") return;
+    if (readRuntimeMode() === "production") return;
     const mixedSendAudio = !!sendAudio && !!socket;
     const mixedStatus = !!onStatusChange && !!onState;
     if (mixedSendAudio && !mixWarnedRef.current.sendAudio) {
@@ -601,7 +600,7 @@ export function BrowserAudioBridge(props: Props) {
           PLAYBACK_CAPTURE_SUPPRESSION_TAIL_MS
       );
       const result = { scheduled: true, queuedSeconds };
-      if (process.env.NEXT_PUBLIC_E2E_AUDIO_HOOK === "1") {
+      if (isE2eAudioHookEnabled()) {
         const evidenceWindow = window as ReleaseAudioEvidenceWindow;
         evidenceWindow.__vocalizeReleaseAudio?.browserSpeaker?.push({
           source: "BrowserAudioBridge",
@@ -690,7 +689,7 @@ export function BrowserAudioBridge(props: Props) {
   // mode_ack handler so B3 can assert backend-driven transitions.
   // -------------------------------------------------------------------------
   useEffect(() => {
-    if (process.env.NODE_ENV !== "test") {
+    if (readRuntimeMode() !== "test") {
       return;
     }
     const handle: TestHandle = {

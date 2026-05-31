@@ -4,11 +4,11 @@ import React from "react";
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ReadinessIndicator } from "../components/ReadinessIndicator";
-import { NextIntlClientProvider } from "next-intl";
+import { I18nProvider } from "@/src/i18n";
 import zh from "../messages/zh.json";
 
 const wrap = (ui: React.ReactNode) => (
-  <NextIntlClientProvider locale="zh" messages={zh}>{ui}</NextIntlClientProvider>
+  <I18nProvider locale="zh" messages={zh}>{ui}</I18nProvider>
 );
 
 describe("<ReadinessIndicator>", () => {
@@ -17,7 +17,7 @@ describe("<ReadinessIndicator>", () => {
       wrap(<ReadinessIndicator passed={true} missing_critical={[]} confidence={1} />)
     );
     expect(container.querySelector(".alert--ok")).toBeInTheDocument();
-    expect(screen.getByText("信息已足够，可以接管")).toBeInTheDocument();
+    expect(screen.getByText("信息已足够")).toBeInTheDocument();
   });
 
   it("passed=false renders .alert--warn with waiting text", () => {

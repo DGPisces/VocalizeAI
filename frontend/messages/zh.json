@@ -1,11 +1,11 @@
 {
   "appName": "VocalizeAI",
-  "start": "开始预订",
-  "taskLabel": "你要 AI 帮你打什么电话？",
+  "start": "开始",
+  "taskLabel": "电话任务",
   "taskPlaceholder": "帮我订今晚 7 点 4 个人的位子",
   "submitTask": "提交任务",
   "create_session": {
-    "status": "正在创建会话...",
+    "status": "创建会话中...",
     "error": "创建会话失败：{message}",
     "retry": "重试"
   },
@@ -18,14 +18,14 @@
     "recovered": "连接已恢复，进入通话回顾。"
   },
   "ai_status": {
-    "filler_active": "AI 正在让对方稍等…",
-    "keepalive_active": "AI 正在告诉对方确认中…",
-    "escalation_warning": "对方表现不耐烦，AI 即将转入回拨流程"
+    "filler_active": "对方等待中…",
+    "keepalive_active": "确认中…",
+    "escalation_warning": "准备回拨"
   },
   "supplement_input": {
     "send": "发送",
     "placeholder_preflight": "随时补充：例如改成两个人",
-    "placeholder_default": "提示 AI",
+    "placeholder_default": "补充条件",
     "placeholder_takeover": "我来说"
   },
   "preflight_chat": {
@@ -34,8 +34,8 @@
   },
   "transcript_stream": {
     "aria_label": "通话记录",
-    "supplement_label": "用户提示 AI",
-    "takeover_label": "用户(直传)",
+    "supplement_label": "补充",
+    "takeover_label": "直传",
     "callback_label": "回拨通话",
     "translate_button": "译"
   },
@@ -43,8 +43,8 @@
     "answer": "回答",
     "submit": "提交",
     "answer_label": "你的回答",
-    "toast_title": "AI 需要你回答一个问题",
-    "timed_out_note": "你没及时回答，AI 已让对方稍候回拨。"
+    "toast_title": "需要补充信息",
+    "timed_out_note": "已转入回拨。"
   },
   "hangup": {
     "button": "挂断",
@@ -55,21 +55,21 @@
   "user_takeover": {
     "active": "我来说",
     "inactive": "我来接话",
-    "relay_hint": "用你的语言输入，AI 会用商家的语言转述给对方。",
-    "cross_lang_notice": "跨语言接管将在 v1.x 提供。当前可换用商家语言输入。"
+    "relay_hint": "输入后会转述给对方。",
+    "cross_lang_notice": "当前请使用商家语言输入。"
   },
   "handover": {
-    "title": "准备好把电话交给 AI 了",
+    "title": "可以交接通话",
     "step_pickup": "拿起 iPhone",
     "step_speakerphone": "打开扬声器",
     "step_place_near_laptop": "把它放在笔记本附近",
-    "takeover_button": "AI 接管",
+    "takeover_button": "交接",
     "checking_mic": "检查麦克风...",
     "disabled_tooltip": "信息已变,请等准备就绪",
     "mic_error": "麦克风不可用。请允许浏览器使用麦克风后再接管。"
   },
   "readiness": {
-    "ready": "信息已足够，可以接管",
+    "ready": "信息已足够",
     "waiting": "等待关键信息",
     "missing": "缺少: {fields}"
   },
@@ -111,7 +111,7 @@
     "permission_hint": "允许麦克风权限后可以显示真实设备名称。"
   },
   "post_call_review": {
-    "title": "通话结束 · 请确认 AI 跟商家说的内容",
+    "title": "通话结束 · 核对结果",
     "empty_state": "通话顺利完成，所有信息均已确认 ✓",
     "back": "返回",
     "confirm_correct": "确认正确",

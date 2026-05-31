@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/src/i18n";
 import { AudioLevelMeter } from "./AudioLevelMeter";
 
 export type DevicePreferences = {

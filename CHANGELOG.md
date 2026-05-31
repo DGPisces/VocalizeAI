@@ -11,28 +11,24 @@ _No unreleased changes yet._
 
 ---
 
-## [1.0.0] — 2026-05-18
+## [0.1.0] — 2026-05-31
 
-**First public release.** Apache 2.0 open-source milestone.
-
-Internal source: `d9bd923` · Public repo first commit: `591aa9e`
-
-Release notes: https://github.com/DGPisces/VocalizeAI/releases/tag/v1.0.0
+Initial Mac-first public release.
 
 ### Added
 
-- **Universal phone-task engine** — 5-layer dialogue pipeline (preflight, question,
-  translate, summarize, merchant) handles arbitrary phone-call scenarios without
-  per-task configuration.
-- **Bilingual zh/en UI** — React frontend with full Chinese and English locale
-  support from day 1.
-- **Raspberry Pi orchestrator** — production-grade deploy target; install script
-  + systemd unit + cloudflared tunnel for zero-port-forward remote access.
-- **Audio loopback testing** — Playwright + pytest harness drives
-  laptop-loopback calls and post-call callback flows; 8 text-bypass AI merchant
-  scenarios with a deterministic judge.
-- **Apache 2.0 license** — OSS launch with SECURITY.md, CONTRIBUTING.md,
-  issue templates, PR template, and CODEOWNERS.
+- Local macOS release artifact with packaged backend, bundled Vite web console,
+  native macOS speech helper, installer, updater, and uninstaller.
+- LLM-only setup through `./vocalize setup`.
+- `./vocalize doctor`, `start`, `stop`, `status`, `logs`, `update`, and
+  `uninstall` commands.
+- Vocalize Provider API for realtime STT/TTS health, capabilities, streaming
+  events, cancellation, and structured errors.
+- Chinese and English web console with task creation, readiness, live
+  transcript, clarification, user supplement, manual takeover, diagnostics,
+  settings, and post-call review.
+- Productized CI gates for backend, Provider API, macOS helper, frontend,
+  packaging/installer smoke, and public-tree audit.
 
-[Unreleased]: https://github.com/DGPisces/VocalizeAI/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/DGPisces/VocalizeAI/releases/tag/v1.0.0
+[Unreleased]: https://github.com/DGPisces/VocalizeAI/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/DGPisces/VocalizeAI/releases/tag/v0.1.0

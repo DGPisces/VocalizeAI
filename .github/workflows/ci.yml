@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   backend:
-    name: Backend lint and scoped tests
+    name: Backend lint, type, and unit tests
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -23,6 +23,9 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.11'
+
+      - name: Install system audio headers
+        run: sudo apt-get update && sudo apt-get install -y portaudio19-dev
 
       - name: Install backend dependencies
         run: |
@@ -34,36 +37,74 @@ jobs:
       - name: Ruff
         run: |
           . .venv/bin/activate
-          ruff check src/
+          ruff check src tools \
+            tests/test_cli.py \
+            tests/test_doctor.py \
+            tests/test_install_scripts.py \
+            tests/test_provider_api_clients.py \
+            tests/test_provider_runtime.py \
+            tests/test_runtime_paths.py \
+            tests/test_release_artifacts.py
 
-      - name: Mypy
+      - name: Mypy productized modules
         run: |
           . .venv/bin/activate
           mypy \
-            src/vocalize/server/frames.py \
-            src/vocalize/server/runner.py \
-            tests/integration/ai_merchant.py \
-            tests/integration/test_ai_merchant.py \
-            tests/integration/judge.py \
-            tests/integration/test_judge.py \
-            tests/integration/conftest.py \
-            --ignore-missing-imports \
-            --no-error-summary
+            src/vocalize/cli.py \
+            src/vocalize/doctor.py \
+            src/vocalize/install_state.py \
+            src/vocalize/runtime_paths.py \
+            src/vocalize/provider_runtime.py \
+            tools/release/artifacts.py \
+            tools/ci/public_tree_audit.py
 
       - name: Pytest
         run: |
           . .venv/bin/activate
+          pytest tests --ignore=tests/integration
+
+  provider-contract:
+    name: Provider API contract tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install backend dependencies
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Provider contract pytest
+        run: |
+          . .venv/bin/activate
           pytest \
-            tests/test_server_frames.py \
-            tests/test_server_ws_integration.py \
-            tests/test_runner_phase_transitions.py \
-            tests/integration/test_ai_merchant.py \
-            tests/integration/test_judge.py \
-            -k 'merchant_text_inject or test_frames or text_frames or ai_merchant or judge' \
+            tests/test_provider_api_clients.py \
+            tests/test_provider_runtime.py \
             -q
 
+  macos-speech-provider:
+    name: macOS speech provider build
+    runs-on: macos-14
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Build Swift helper
+        run: swift build -c release --package-path macos/VocalizeSpeechProvider
+
+      - name: Check helper binary exists
+        run: test -x macos/VocalizeSpeechProvider/.build/release/VocalizeSpeechProvider
+
   frontend:
-    name: Frontend type and unit tests
+    name: Frontend lint, build, and unit tests
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -80,17 +121,21 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: TypeScript type check
+      - name: Lint and type check
         working-directory: frontend
-        run: npx tsc --noEmit --pretty false
+        run: npm run lint
+
+      - name: Build static frontend
+        working-directory: frontend
+        run: npm run build
 
       - name: Vitest
         working-directory: frontend
         run: npm test
 
-  playwright-loopback:
-    name: Playwright loopback
-    runs-on: ubuntu-latest
+  packaging-installer:
+    name: Packaging and installer smoke
+    runs-on: macos-14
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -99,13 +144,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.11'
-
-      - name: Install backend dependencies
-        run: |
-          python -m venv .venv
-          . .venv/bin/activate
-          python -m pip install --upgrade pip
-          python -m pip install -e '.[dev]'
 
       - name: Set up Node
         uses: actions/setup-node@v6
@@ -114,30 +152,48 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
+      - name: Install backend dependencies
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
 
-      - name: Install Playwright browser
-        working-directory: frontend
-        run: npm exec -- playwright install --with-deps chromium
+      - name: Shell syntax
+        run: bash -n install/install.sh install/uninstall.sh install/verify-release.sh scripts/build-macos-release.sh
 
-      - name: Playwright integration tests
-        working-directory: frontend
-        run: >
-          npm run test:integration --
-          ../tests/integration/laptop-loopback.spec.ts
-          ../tests/integration/post-call-callback.spec.ts
+      - name: Build unsigned macOS artifact
+        run: scripts/build-macos-release.sh --signing-mode skip
 
-  ai-merchant:
-    name: AI merchant scenarios
+      - name: Verify checksum
+        run: |
+          zip_path="$(ls dist/release/VocalizeAI-*-macos-*.zip | head -n 1)"
+          bash install/verify-release.sh dist/release/SHA256SUMS "$zip_path"
+
+      - name: Install, setup, and uninstall smoke
+        run: |
+          set -euo pipefail
+          tmp_dir="$(mktemp -d)"
+          zip_path="$(ls dist/release/VocalizeAI-*-macos-*.zip | head -n 1)"
+          bash install/install.sh \
+            --artifact "$zip_path" \
+            --checksums dist/release/SHA256SUMS \
+            --install-dir "${tmp_dir}/VocalizeAI" \
+            --yes
+          "${tmp_dir}/VocalizeAI/vocalize" --help >/tmp/vocalize-help.txt
+          "${tmp_dir}/VocalizeAI/vocalize" setup \
+            --non-interactive \
+            --llm-api-key sk-test \
+            --llm-base-url https://llm.example/v1 \
+            --llm-model test-model \
+            --global-command no \
+            --open-browser no
+          bash "${tmp_dir}/VocalizeAI/uninstall.sh" --yes
+          test ! -e "${tmp_dir}/VocalizeAI"
+
+  public-tree-audit:
+    name: Public tree audit
     runs-on: ubuntu-latest
-    # Skip on fork PRs — secrets are not available and this job would fail
-    # rather than produce a meaningful result. External contributors get full
-    # coverage from backend + frontend + playwright-loopback jobs above.
-    if: >
-      github.event.pull_request.head.repo.full_name == github.repository ||
-      github.event_name == 'push'
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -147,56 +203,14 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install backend dependencies
+      - name: Build public candidate file list
         run: |
-          python -m venv .venv
-          . .venv/bin/activate
-          python -m pip install --upgrade pip
-          python -m pip install -e '.[dev]'
+          git ls-files -z --full-name > /tmp/vocalize-tracked-files.bin
+          python scripts/build-public-filelist.py \
+            --allow install/public-allowlist.md \
+            --deny .public-sync-deny \
+            --tracked-null /tmp/vocalize-tracked-files.bin \
+            > /tmp/vocalize-public-files.txt
 
-      - name: Run AI merchant scenarios (deterministic judge)
-        # Intentionally does NOT pass --ai-provider-required and does NOT
-        # inject DEEPSEEK_API_KEY: the current text-bypass harness only
-        # drives merchant-side frames (merchant_text_inject) and cannot
-        # produce the user-side actions that 7 of 8 CI scenarios require
-        # (preflight supplements, clarification acks, user takeover, WS
-        # reconnect, on-demand translate). Running real DeepSeek-V4-Pro
-        # against that limited evidence yields 23/24 must-pass failures
-        # that are structural harness gaps, not regressions. The
-        # deterministic judge (deterministic_judge_case) instead asserts
-        # evidence-shape invariants on every PR.
-        #
-        # Real-LLM judge coverage is preserved by the release-audio gate
-        # (`pytest --release-audio --ai-provider-required`) which runs
-        # manually before each release with DEEPSEEK_API_KEY exported in
-        # the operator shell.
-        #
-        # Extending the harness to drive user-side flows is tracked as a
-        # follow-up (see STATE.md "B3b text-bypass harness gap").
-        env:
-          VOCALIZE_ENABLE_TEST_FRAMES: "1"
-        run: |
-          export AI_MERCHANT_PR_COMMAND="pytest tests/integration/test_ai_merchant.py -q"
-          python - <<'PY'
-          import os
-
-          command = os.environ["AI_MERCHANT_PR_COMMAND"]
-          forbidden = ("--release-audio", "release_audio")
-          selected = [token for token in forbidden if token in command]
-          if selected:
-              raise SystemExit(
-                  "pull_request AI merchant command must not select "
-                  f"release-audio cases: {selected}"
-              )
-          PY
-          . .venv/bin/activate
-          $AI_MERCHANT_PR_COMMAND
-
-      - name: Upload AI merchant failure evidence
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: ai-merchant-evidence
-          path: tests/integration/evidence/
-          if-no-files-found: ignore
-          retention-days: 14
+      - name: Audit public candidate
+        run: python -m tools.ci.public_tree_audit --root . --file-list /tmp/vocalize-public-files.txt

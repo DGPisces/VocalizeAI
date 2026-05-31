@@ -1,8 +1,0 @@
-default_zh.wav
-==============
-
-Source : https://github.com/FunAudioLLM/CosyVoice/blob/main/asset/zero_shot_prompt.wav
-License: Apache License 2.0 (https://github.com/FunAudioLLM/CosyVoice/blob/main/LICENSE)
-Status : Placeholder voice reference for CosyVoice 2 zero-shot synthesis.
-         Will be replaced with a project-owned voice sample before public release.
-         When you replace it, delete this NOTICE alongside.

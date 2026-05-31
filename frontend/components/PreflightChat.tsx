@@ -1,7 +1,7 @@
 // frontend/components/PreflightChat.tsx
 
 import React, { useEffect, useMemo, useRef } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/src/i18n";
 import type { TranscriptMessage } from "../lib/state";
 
 export interface LocalUserInput {

@@ -1,7 +1,7 @@
 // frontend/components/ClarificationModal.tsx — new
 
 import React, { useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/src/i18n";
 
 interface Request {
   field: string;

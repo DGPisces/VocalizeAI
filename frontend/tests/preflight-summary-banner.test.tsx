@@ -5,12 +5,12 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PreflightSummaryBanner } from "../components/PreflightSummaryBanner";
-import { NextIntlClientProvider } from "next-intl";
+import { I18nProvider } from "@/src/i18n";
 import zh from "../messages/zh.json";
 import type { TranscriptMessage } from "../lib/state";
 
 const wrap = (ui: React.ReactNode) => (
-  <NextIntlClientProvider locale="zh" messages={zh}>{ui}</NextIntlClientProvider>
+  <I18nProvider locale="zh" messages={zh}>{ui}</I18nProvider>
 );
 
 const makeMsg = (id: string, role: TranscriptMessage["role"], text: string): TranscriptMessage => ({

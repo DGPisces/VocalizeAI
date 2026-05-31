@@ -1,7 +1,7 @@
 {
   "appName": "VocalizeAI",
   "start": "Start",
-  "taskLabel": "What phone task should the AI handle?",
+  "taskLabel": "Phone task",
   "taskPlaceholder": "Book a table for 4 at 7 pm tonight",
   "submitTask": "Submit task",
   "create_session": {
@@ -18,14 +18,14 @@
     "recovered": "Connection recovered. Review your call below."
   },
   "ai_status": {
-    "filler_active": "AI is asking the merchant to hold…",
-    "keepalive_active": "AI is reassuring the merchant…",
-    "escalation_warning": "Merchant is impatient; AI will hand off to the callback flow"
+    "filler_active": "Merchant is waiting…",
+    "keepalive_active": "Checking…",
+    "escalation_warning": "Callback ready"
   },
   "supplement_input": {
     "send": "Send",
     "placeholder_preflight": "Add more info anytime — e.g. change to 2 people",
-    "placeholder_default": "Hint to AI",
+    "placeholder_default": "Add details",
     "placeholder_takeover": "I'll speak"
   },
   "preflight_chat": {
@@ -34,7 +34,7 @@
   },
   "transcript_stream": {
     "aria_label": "Call transcript",
-    "supplement_label": "User hint",
+    "supplement_label": "Note",
     "takeover_label": "User (direct)",
     "callback_label": "Callback",
     "translate_button": "Translate"
@@ -43,8 +43,8 @@
     "answer": "Answer",
     "submit": "Submit",
     "answer_label": "Your answer",
-    "toast_title": "AI needs your input",
-    "timed_out_note": "You didn't answer in time; the AI told the merchant we'd call back."
+    "toast_title": "Input needed",
+    "timed_out_note": "Moved to callback."
   },
   "hangup": {
     "button": "Hang up",
@@ -55,21 +55,21 @@
   "user_takeover": {
     "active": "I'm speaking",
     "inactive": "Take over",
-    "relay_hint": "Type in your language — the AI will speak it to the merchant in their language.",
-    "cross_lang_notice": "Cross-language takeover will arrive in v1.x. For now, type in the merchant's language."
+    "relay_hint": "Text will be relayed to the merchant.",
+    "cross_lang_notice": "For now, type in the merchant's language."
   },
   "handover": {
-    "title": "Ready to hand the call to the AI",
+    "title": "Ready for handover",
     "step_pickup": "Pick up the iPhone",
     "step_speakerphone": "Enable speakerphone",
     "step_place_near_laptop": "Place it near the laptop",
-    "takeover_button": "AI takeover",
+    "takeover_button": "Handover",
     "checking_mic": "Checking microphone...",
     "disabled_tooltip": "Info changed, waiting for readiness",
     "mic_error": "Microphone unavailable. Allow browser microphone access before takeover."
   },
   "readiness": {
-    "ready": "Info ready, AI can take over",
+    "ready": "Info ready",
     "waiting": "Waiting for key info",
     "missing": "Missing: {fields}"
   },
@@ -111,7 +111,7 @@
     "permission_hint": "Allow microphone access to show real device names."
   },
   "post_call_review": {
-    "title": "Call ended — please confirm what the AI told the merchant",
+    "title": "Call ended — review result",
     "empty_state": "Call completed; everything confirmed ✓",
     "back": "Back",
     "confirm_correct": "Confirm correct",

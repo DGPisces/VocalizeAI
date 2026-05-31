@@ -4,12 +4,12 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TextSupplementInput } from "../components/TextSupplementInput";
-import { NextIntlClientProvider } from "next-intl";
+import { I18nProvider } from "@/src/i18n";
 import zh from "../messages/zh.json";
 import React from "react";
 
 const wrap = (ui: React.ReactNode) => (
-  <NextIntlClientProvider locale="zh" messages={zh}>{ui}</NextIntlClientProvider>
+  <I18nProvider locale="zh" messages={zh}>{ui}</I18nProvider>
 );
 
 describe("<TextSupplementInput>", () => {
@@ -56,7 +56,7 @@ describe("<TextSupplementInput>", () => {
 
   it("test_placeholder_resolves_for_in_call_default", () => {
     render(wrap(<TextSupplementInput onSend={() => {}} phase="execution_active" mode="default" />));
-    expect(screen.getByPlaceholderText("提示 AI")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("补充条件")).toBeInTheDocument();
   });
 
   it("test_placeholder_resolves_for_in_call_takeover", () => {

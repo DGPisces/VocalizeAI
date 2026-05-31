@@ -17,8 +17,8 @@ describe("LiveConsole", () => {
   const validWsUrl = "ws://example.test/ws/sessions/s";
 
   beforeEach(() => {
-    process.env.NEXT_PUBLIC_VOCALIZE_API_BASE_URL = "http://example.test";
-    delete process.env.NEXT_PUBLIC_VOCALIZE_WS_BASE_URL;
+    process.env.VITE_VOCALIZE_API_BASE_URL = "http://example.test";
+    delete process.env.VITE_VOCALIZE_WS_BASE_URL;
     localStorage.clear();
     vi.mocked(postTask).mockClear();
   });
@@ -26,8 +26,8 @@ describe("LiveConsole", () => {
   it("keeps handover disabled until backend readiness passes", async () => {
     render(<LiveConsole sessionId="s" wsUrl={validWsUrl} />);
 
-    expect(screen.getByRole("button", { name: "AI 接管" })).toBeDisabled();
-    fireEvent.change(screen.getByLabelText("你要 AI 帮你打什么电话？"), {
+    expect(screen.getByRole("button", { name: "交接" })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("电话任务"), {
       target: { value: "帮我订今晚七点四个人" }
     });
     fireEvent.click(screen.getByRole("button", { name: "提交任务" }));
@@ -40,7 +40,7 @@ describe("LiveConsole", () => {
       confidence: 1
     })));
 
-    expect(screen.getByRole("button", { name: "AI 接管" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "交接" })).not.toBeDisabled();
   });
 
   it("does not render the test-only readiness override", () => {
@@ -66,7 +66,7 @@ describe("LiveConsole", () => {
 
     expect(MockWebSocket.instances).toHaveLength(0);
 
-    fireEvent.change(screen.getByLabelText("你要 AI 帮你打什么电话？"), {
+    fireEvent.change(screen.getByLabelText("电话任务"), {
       target: { value: "帮我订今晚七点四个人" }
     });
     fireEvent.click(screen.getByRole("button", { name: "提交任务" }));
@@ -82,7 +82,7 @@ describe("LiveConsole", () => {
   it("rejects cross-origin WebSocket URLs before connecting", async () => {
     render(<LiveConsole sessionId="s" wsUrl="wss://attacker.example/ws/sessions/s" />);
 
-    fireEvent.change(screen.getByLabelText("你要 AI 帮你打什么电话？"), {
+    fireEvent.change(screen.getByLabelText("电话任务"), {
       target: { value: "帮我订今晚七点四个人" }
     });
     fireEvent.click(screen.getByRole("button", { name: "提交任务" }));
@@ -94,7 +94,7 @@ describe("LiveConsole", () => {
 
   it("routes clarification replies through ack_clarification", async () => {
     render(<LiveConsole sessionId="s" wsUrl={validWsUrl} />);
-    fireEvent.change(screen.getByLabelText("你要 AI 帮你打什么电话？"), {
+    fireEvent.change(screen.getByLabelText("电话任务"), {
       target: { value: "帮我订今晚七点四个人" }
     });
     fireEvent.click(screen.getByRole("button", { name: "提交任务" }));
@@ -127,7 +127,7 @@ describe("LiveConsole", () => {
 
   it("samples audio diagnostics instead of appending every PCM packet", async () => {
     render(<LiveConsole sessionId="s" wsUrl={validWsUrl} />);
-    fireEvent.change(screen.getByLabelText("你要 AI 帮你打什么电话？"), {
+    fireEvent.change(screen.getByLabelText("电话任务"), {
       target: { value: "帮我订今晚七点四个人" }
     });
     fireEvent.click(screen.getByRole("button", { name: "提交任务" }));
@@ -153,7 +153,7 @@ describe("LiveConsole", () => {
       }
     });
     render(<LiveConsole sessionId="s" wsUrl={validWsUrl} />);
-    fireEvent.change(screen.getByLabelText("你要 AI 帮你打什么电话？"), {
+    fireEvent.change(screen.getByLabelText("电话任务"), {
       target: { value: "帮我订今晚七点四个人" }
     });
     fireEvent.click(screen.getByRole("button", { name: "提交任务" }));
