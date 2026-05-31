@@ -105,7 +105,7 @@ def _check_llm_probe(cfg: Config, *, skip: bool) -> DoctorCheck:
             "llm_probe",
             False,
             _classify_llm_probe_error(exc),
-            "verify endpoint, API key, model, streaming, tool calling, and JSON mode",
+            "rerun `./vocalize setup` to adjust thinking mode; verify endpoint, API key, model, streaming, tool calling, and JSON mode",
         )
     return DoctorCheck("llm_probe", True, result)
 
