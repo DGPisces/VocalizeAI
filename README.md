@@ -38,6 +38,7 @@ cd VocalizeAI
 - LLM base URL
 - LLM API key
 - LLM model
+- whether to enable or disable LLM thinking mode
 - whether to add an optional global `vocalize` command
 - whether `start` should open the browser automatically
 

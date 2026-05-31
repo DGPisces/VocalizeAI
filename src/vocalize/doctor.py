@@ -16,7 +16,7 @@ from openai import AsyncOpenAI
 
 from vocalize.config import Config
 from vocalize.install_state import INSTALL_MARKER
-from vocalize.llm.openai_compat import _server_disable_thinking
+from vocalize.llm.openai_compat import _thinking_extra_body
 from vocalize.provider_runtime import ensure_speech_provider_started
 
 
@@ -128,8 +128,9 @@ async def _run_llm_full_agent_probe(cfg: Config) -> str:
         "response_format": {"type": "json_object"},
         "stream": True,
     }
-    if _server_disable_thinking(cfg.openai_model):
-        json_kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
+    extra_body = _thinking_extra_body(cfg.openai_thinking_mode)
+    if extra_body is not None:
+        json_kwargs["extra_body"] = extra_body
     json_stream = await client.chat.completions.create(**json_kwargs)
     json_text = ""
     async for chunk in json_stream:
@@ -170,8 +171,9 @@ async def _run_llm_full_agent_probe(cfg: Config) -> str:
         },
         "stream": True,
     }
-    if _server_disable_thinking(cfg.openai_model):
-        tool_kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
+    extra_body = _thinking_extra_body(cfg.openai_thinking_mode)
+    if extra_body is not None:
+        tool_kwargs["extra_body"] = extra_body
     tool_stream = await client.chat.completions.create(**tool_kwargs)
     saw_tool_call = False
     async for chunk in tool_stream:

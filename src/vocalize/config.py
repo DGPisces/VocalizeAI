@@ -7,7 +7,7 @@
 import logging
 import os
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, cast
 
 try:
     from dotenv import load_dotenv
@@ -43,6 +43,9 @@ def _float_env(name: str, default: float) -> float:
         return default
 
 
+OpenAIThinkingMode = Literal["enabled", "disabled"]
+
+
 def _bool_env(name: str, default: bool) -> bool:
     """读取布尔环境变量；接受 1/true/yes/on 和 0/false/no/off。"""
     raw = os.getenv(name)
@@ -57,6 +60,35 @@ def _bool_env(name: str, default: bool) -> bool:
     return default
 
 
+def _thinking_mode_env(name: str, default: OpenAIThinkingMode) -> OpenAIThinkingMode:
+    """读取 LLM thinking 模式；兼容常见 on/off 写法。"""
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return default
+    normalized = raw.strip().lower().replace("_", "-")
+    aliases = {
+        "on": "enabled",
+        "true": "enabled",
+        "yes": "enabled",
+        "thinking": "enabled",
+        "off": "disabled",
+        "false": "disabled",
+        "no": "disabled",
+        "non-thinking": "disabled",
+        "nonthinking": "disabled",
+    }
+    normalized = aliases.get(normalized, normalized)
+    if normalized in {"enabled", "disabled"}:
+        return cast(OpenAIThinkingMode, normalized)
+    logging.warning(
+        "环境变量 %s=%r 不是合法 thinking 模式，使用默认值 %s",
+        name,
+        raw,
+        default,
+    )
+    return default
+
+
 @dataclass
 class Config:
     """应用配置类。"""
@@ -65,6 +97,7 @@ class Config:
     openai_api_key: str | None = None
     openai_base_url: str = "https://api.deepseek.com/v1"
     openai_model: str = "deepseek-chat"
+    openai_thinking_mode: OpenAIThinkingMode = "disabled"
 
     # Speech Provider API. v0.1 public default expects the macOS native helper
     # on loopback; setup/doctor may rewrite these in generated local config.
@@ -110,6 +143,10 @@ class Config:
             openai_api_key=os.getenv("OPENAI_API_KEY"),
             openai_base_url=os.getenv("OPENAI_BASE_URL", cls.openai_base_url),
             openai_model=os.getenv("OPENAI_MODEL", cls.openai_model),
+            openai_thinking_mode=_thinking_mode_env(
+                "OPENAI_THINKING_MODE",
+                cls.openai_thinking_mode,
+            ),
             stt_provider_url=os.getenv(
                 "VOCALIZE_STT_PROVIDER_URL", cls.stt_provider_url
             ),

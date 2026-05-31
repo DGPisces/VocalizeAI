@@ -73,6 +73,8 @@ def test_cli_setup_writes_env_providers_and_preferences(
             "https://llm.example/v1",
             "--llm-model",
             "test-model",
+            "--llm-thinking-mode",
+            "enabled",
             "--global-command",
             "no",
             "--open-browser",
@@ -86,6 +88,7 @@ def test_cli_setup_writes_env_providers_and_preferences(
     assert "OPENAI_API_KEY=sk-test" in env_text
     assert "OPENAI_BASE_URL=https://llm.example/v1" in env_text
     assert "OPENAI_MODEL=test-model" in env_text
+    assert "OPENAI_THINKING_MODE=enabled" in env_text
     providers = (tmp_path / "config" / "providers.yaml").read_text(encoding="utf-8")
     assert "provider: macos-native" in providers
     preferences = json.loads(

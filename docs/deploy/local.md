@@ -72,6 +72,7 @@ $EDITOR .env
 | `OPENAI_API_KEY` | **yes** | LLM authentication — any OpenAI-compatible provider (OpenAI, DeepSeek, Qwen, etc.) |
 | `OPENAI_BASE_URL` | default ok | LLM endpoint; default `https://api.deepseek.com/v1` |
 | `OPENAI_MODEL` | default ok | Model name; default `deepseek-chat` |
+| `OPENAI_THINKING_MODE` | default ok | `enabled` or `disabled`; default `disabled` for non-thinking LLM calls |
 | `VOCALIZE_STT_PROVIDER_URL` | default ok | STT Provider API base URL; defaults to the local macOS native helper |
 | `VOCALIZE_TTS_PROVIDER_URL` | default ok | TTS Provider API base URL; defaults to the local macOS native helper |
 | `VOCALIZE_SPEECH_PROVIDER_AUTO_START` | default ok | Set `1` to let the backend start the configured speech helper command |
@@ -95,10 +96,11 @@ VPN, reverse-proxy auth, etc.). Per-user auth is v1.x scope
 **Minimum for local dev on macOS:**
 ```bash
 OPENAI_API_KEY=<your-key>
+OPENAI_THINKING_MODE=disabled
 VITE_VOCALIZE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-With these two set, the backend and frontend work end-to-end. STT/TTS default to
+With these values set, the backend and frontend work end-to-end. STT/TTS default to
 the local macOS native speech helper.
 
 ---

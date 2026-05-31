@@ -127,6 +127,7 @@ def write_env_file(
     openai_api_key: str,
     openai_base_url: str,
     openai_model: str,
+    openai_thinking_mode: str,
 ) -> None:
     """Write generated runtime env for ordinary local installs."""
     content = "\n".join(
@@ -142,6 +143,7 @@ def write_env_file(
             "VOCALIZE_SPEECH_PROVIDER_STARTUP_TIMEOUT_S=5.0",
             f"OPENAI_BASE_URL={openai_base_url}",
             f"OPENAI_MODEL={openai_model}",
+            f"OPENAI_THINKING_MODE={openai_thinking_mode}",
             f"OPENAI_API_KEY={openai_api_key}",
             "DEFAULT_LANGUAGE=zh",
             f"LOG_DIR={paths.logs_dir}",

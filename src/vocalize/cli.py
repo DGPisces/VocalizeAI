@@ -16,7 +16,7 @@ import webbrowser
 import zipfile
 from pathlib import Path
 
-from vocalize.config import Config
+from vocalize.config import Config, OpenAIThinkingMode
 from vocalize.doctor import run_doctor
 from vocalize.install_state import (
     InstallPaths,
@@ -34,6 +34,7 @@ from vocalize.install_state import (
 
 YES_VALUES = {"1", "yes", "y", "true", "on"}
 NO_VALUES = {"0", "no", "n", "false", "off"}
+THINKING_MODE_CHOICES: tuple[OpenAIThinkingMode, ...] = ("enabled", "disabled")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -44,6 +45,7 @@ def main(argv: list[str] | None = None) -> int:
     setup_parser.add_argument("--llm-base-url")
     setup_parser.add_argument("--llm-api-key")
     setup_parser.add_argument("--llm-model")
+    setup_parser.add_argument("--llm-thinking-mode", choices=THINKING_MODE_CHOICES)
     setup_parser.add_argument("--global-command", choices=["yes", "no"])
     setup_parser.add_argument("--open-browser", choices=["yes", "no"])
     setup_parser.add_argument("--non-interactive", action="store_true")
@@ -113,6 +115,13 @@ def _setup(args: argparse.Namespace, paths: InstallPaths) -> int:
         default=cfg.openai_model,
         non_interactive=args.non_interactive,
     )
+    thinking_mode = _choice_or_prompt(
+        args.llm_thinking_mode,
+        "LLM thinking mode",
+        choices=THINKING_MODE_CHOICES,
+        default=cfg.openai_thinking_mode,
+        non_interactive=args.non_interactive,
+    )
     api_key = args.llm_api_key
     if not api_key and not args.non_interactive:
         api_key = getpass.getpass("LLM API key: ")
@@ -139,6 +148,7 @@ def _setup(args: argparse.Namespace, paths: InstallPaths) -> int:
         openai_api_key=api_key,
         openai_base_url=base_url,
         openai_model=model,
+        openai_thinking_mode=thinking_mode,
     )
     write_providers_yaml(paths)
     write_preferences(paths, {"open_browser": open_browser})
@@ -343,6 +353,33 @@ def _bool_choice(
     if answer in NO_VALUES:
         return False
     raise ValueError(f"invalid yes/no answer: {answer}")
+
+
+def _choice_or_prompt(
+    value: str | None,
+    prompt: str,
+    *,
+    choices: tuple[OpenAIThinkingMode, ...],
+    default: OpenAIThinkingMode,
+    non_interactive: bool,
+) -> OpenAIThinkingMode:
+    allowed = set(choices)
+    if value:
+        normalized = value.strip().lower().replace("_", "-")
+        if normalized in allowed:
+            return normalized
+        raise ValueError(f"invalid choice for {prompt}: {value}")
+    if non_interactive:
+        return default
+    choice_label = "/".join(choices)
+    while True:
+        answer = input(f"{prompt} ({choice_label}) [{default}]: ").strip().lower()
+        normalized = answer.replace("_", "-")
+        if not normalized:
+            return default
+        if normalized in allowed:
+            return normalized
+        print(f"ERROR: choose one of: {choice_label}", file=sys.stderr)
 
 
 def _create_global_symlink(paths: InstallPaths) -> Path:

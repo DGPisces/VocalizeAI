@@ -105,6 +105,7 @@ sudo nano /opt/vocalize/.env
 | `OPENAI_API_KEY` | **yes** | LLM authentication (any OpenAI-compatible provider) |
 | `OPENAI_BASE_URL` | default ok | LLM endpoint; default `https://api.deepseek.com/v1` |
 | `OPENAI_MODEL` | default ok | Model name; default `deepseek-chat` |
+| `OPENAI_THINKING_MODE` | default ok | `enabled` or `disabled`; default `disabled` for non-thinking LLM calls |
 | `VOCALIZE_STT_PROVIDER_URL` | default ok | STT Provider API base URL; macOS default is the local native helper |
 | `VOCALIZE_TTS_PROVIDER_URL` | default ok | TTS Provider API base URL; macOS default is the local native helper |
 | `VOCALIZE_SPEECH_PROVIDER_AUTO_START` | default ok | Set `1` to let the backend start the configured speech helper command |
@@ -125,6 +126,7 @@ sudo nano /opt/vocalize/.env
 OPENAI_API_KEY=<your-openai-compatible-api-key>
 OPENAI_BASE_URL=https://api.deepseek.com/v1
 OPENAI_MODEL=deepseek-chat
+OPENAI_THINKING_MODE=disabled
 VOCALIZE_STT_PROVIDER_URL=http://127.0.0.1:8765
 VOCALIZE_TTS_PROVIDER_URL=http://127.0.0.1:8765
 VOCALIZE_SPEECH_PROVIDER_AUTO_START=1

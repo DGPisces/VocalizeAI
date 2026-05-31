@@ -126,10 +126,11 @@ def test_doctor_requests_not_determined_speech_permissions(monkeypatch) -> None:
     ]
 
 
-def test_deepseek_v4_doctor_probe_disables_thinking(monkeypatch) -> None:
-    from vocalize import doctor
+def test_doctor_probe_thinking_extra_body_modes() -> None:
+    from vocalize.llm.openai_compat import _thinking_extra_body
 
-    assert doctor._server_disable_thinking("deepseek-v4-flash") is True
+    assert _thinking_extra_body("disabled") == {"thinking": {"type": "disabled"}}
+    assert _thinking_extra_body("enabled") is None
 
 
 def test_doctor_validates_packaged_install_layout(monkeypatch, tmp_path) -> None:

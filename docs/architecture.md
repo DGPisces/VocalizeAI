@@ -480,6 +480,8 @@ speakerphone).
 OpenAI-compatible HTTP API. Default provider is DeepSeek (`OPENAI_BASE_URL=https://api.deepseek.com/v1`,
 `OPENAI_MODEL=deepseek-chat`). Any OpenAI-compatible endpoint works (OpenAI,
 Qwen, local Ollama, etc.) by setting `OPENAI_BASE_URL` and `OPENAI_MODEL`.
+`OPENAI_THINKING_MODE=disabled` requests non-thinking output; `enabled` leaves
+thinking behavior to the selected model/provider.
 
 The `openai` Python SDK is used with streaming enabled; tool-calling is used for
 slot assessment in Layer 1 and readiness assessment in preflight.

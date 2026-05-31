@@ -67,7 +67,7 @@ the assets to the GitHub Release.
 Before the public reset or release announcement, a tester must install from the
 GitHub Release artifact and verify:
 
-- `./vocalize setup` with only LLM values
+- `./vocalize setup` with only LLM values and thinking mode
 - `./vocalize doctor` with production checks enabled
 - `./vocalize start`
 - one Chinese and one English end-to-end smoke task
