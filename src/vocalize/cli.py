@@ -11,7 +11,10 @@ import stat
 import subprocess
 import sys
 import tempfile
+import threading
 import time
+import urllib.error
+import urllib.request
 import webbrowser
 import zipfile
 from pathlib import Path
@@ -35,6 +38,8 @@ from vocalize.install_state import (
 YES_VALUES = {"1", "yes", "y", "true", "on"}
 NO_VALUES = {"0", "no", "n", "false", "off"}
 THINKING_MODE_CHOICES: tuple[OpenAIThinkingMode, ...] = ("enabled", "disabled")
+BROWSER_READY_TIMEOUT_S = 30.0
+BROWSER_READY_INTERVAL_S = 0.25
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -202,11 +207,11 @@ def _start(args: argparse.Namespace, paths: InstallPaths) -> int:
         paths.pid_file.write_text(str(process.pid), encoding="utf-8")
         print(f"Started in background: pid {process.pid}")
         if open_browser:
-            webbrowser.open(_local_url(env))
+            _open_browser_when_ready(env)
         return 0
 
     if open_browser:
-        webbrowser.open(_local_url(env))
+        _open_browser_when_ready_async(env)
     from vocalize.main import main as serve_main
 
     previous = os.environ.copy()
@@ -315,7 +320,54 @@ def _serve_command() -> list[str]:
 def _local_url(env: dict[str, str]) -> str:
     host = env.get("VOCALIZE_HOST", "127.0.0.1")
     port = env.get("VOCALIZE_PORT", "8080")
+    if host in {"0.0.0.0", "::"}:
+        host = "127.0.0.1"
     return f"http://{host}:{port}"
+
+
+def _health_url(env: dict[str, str]) -> str:
+    return f"{_local_url(env)}/health"
+
+
+def _open_browser_when_ready_async(env: dict[str, str]) -> None:
+    thread = threading.Thread(
+        target=_open_browser_when_ready,
+        args=(env.copy(),),
+        name="vocalize-browser-open",
+        daemon=True,
+    )
+    thread.start()
+
+
+def _open_browser_when_ready(
+    env: dict[str, str],
+    *,
+    timeout_s: float = BROWSER_READY_TIMEOUT_S,
+    interval_s: float = BROWSER_READY_INTERVAL_S,
+) -> bool:
+    url = _local_url(env)
+    if _wait_for_http_ready(_health_url(env), timeout_s=timeout_s, interval_s=interval_s):
+        webbrowser.open(url)
+        return True
+    print(
+        f"Browser not opened; server was not ready within {timeout_s:.0f}s: {url}",
+        file=sys.stderr,
+    )
+    return False
+
+
+def _wait_for_http_ready(url: str, *, timeout_s: float, interval_s: float) -> bool:
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        try:
+            request = urllib.request.Request(url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(request, timeout=1.0) as response:
+                if 200 <= response.status < 300:
+                    return True
+        except (OSError, urllib.error.URLError):
+            pass
+        time.sleep(interval_s)
+    return False
 
 
 def _value_or_prompt(

@@ -9,6 +9,7 @@ import types
 import zipfile
 from pathlib import Path
 
+import vocalize.cli as cli
 from vocalize.cli import main
 from vocalize.doctor import DoctorCheck
 
@@ -223,6 +224,73 @@ def test_cli_start_foreground_applies_install_env(monkeypatch, tmp_path) -> None
     assert main(["start", "--no-browser"]) == 0
 
     assert seen_env == [str(install_root / "config" / ".env")]
+
+
+def test_cli_start_foreground_delays_browser_until_server_ready(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    install_root = tmp_path / "VocalizeAI"
+    (install_root / "config").mkdir(parents=True)
+    (install_root / "logs").mkdir()
+    (install_root / "cache").mkdir()
+    (install_root / "config" / ".env").write_text("OPENAI_API_KEY=sk-test\n")
+    monkeypatch.setenv("VOCALIZE_INSTALL_ROOT", str(install_root))
+    events: list[tuple[str, str | None]] = []
+    monkeypatch.setattr(
+        "vocalize.cli._open_browser_when_ready_async",
+        lambda env: events.append(("browser", env.get("VOCALIZE_ENV_FILE"))),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "vocalize.main",
+        types.SimpleNamespace(
+            main=lambda: events.append(("serve", os.getenv("VOCALIZE_ENV_FILE")))
+        ),
+    )
+
+    assert main(["start"]) == 0
+
+    assert events == [
+        ("browser", str(install_root / "config" / ".env")),
+        ("serve", str(install_root / "config" / ".env")),
+    ]
+
+
+def test_open_browser_when_ready_waits_for_health(monkeypatch) -> None:
+    calls: list[str] = []
+    opened: list[str] = []
+
+    class _ReadyResponse:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args) -> None:
+            return None
+
+    def fake_urlopen(request, timeout: float):
+        calls.append(request.full_url)
+        if len(calls) == 1:
+            raise OSError("not ready")
+        return _ReadyResponse()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    monkeypatch.setattr("time.sleep", lambda _seconds: None)
+    monkeypatch.setattr("webbrowser.open", lambda url: opened.append(url))
+
+    assert cli._open_browser_when_ready(
+        {"VOCALIZE_HOST": "127.0.0.1", "VOCALIZE_PORT": "1234"},
+        timeout_s=1.0,
+        interval_s=0.0,
+    )
+
+    assert calls == [
+        "http://127.0.0.1:1234/health",
+        "http://127.0.0.1:1234/health",
+    ]
+    assert opened == ["http://127.0.0.1:1234"]
 
 
 def _zip_dir(source: Path, destination: Path) -> None:

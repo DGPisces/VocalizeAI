@@ -44,6 +44,8 @@ cd VocalizeAI
 
 You do not choose a speech model in the default macOS install. VocalizeAI starts
 the bundled macOS speech helper and connects to it through the Provider API.
+When browser auto-open is enabled, `start` waits for the local server health
+endpoint before opening the page.
 
 ## Update or Uninstall
 
